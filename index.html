@@ -195,6 +195,41 @@ textarea.input{min-height:80px;resize:vertical;line-height:1.5}
   .mobnav a.active{color:var(--primary)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== PROJECT / DAY-PAGE COMPONENTS (inspired by the reference day pages) ===== */
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+.tnode{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 13px;box-shadow:var(--shadow);font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--ink-soft)}
+.tnode .ic{width:15px;height:15px;color:var(--primary)}
+.capture{background:var(--primary-soft);border-radius:18px;padding:20px 22px;margin-top:18px}
+.capture .ch{display:flex;align-items:center;gap:10px;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:1.12rem;color:var(--primary-deep);margin:0 0 6px;line-height:1.2}
+.capture .ch .ic{width:21px;height:21px;flex:none;color:var(--primary)}
+.capture .intro{font-size:.96rem;line-height:1.6;color:var(--primary-deep);margin:0 0 10px}
+.capture ol{list-style:none;counter-reset:cap;margin:0;padding:0}
+.capture ol li{counter-increment:cap;position:relative;padding:9px 0 9px 38px;font-size:.96rem;line-height:1.55;color:var(--ink)}
+.capture ol li+li{border-top:1px solid color-mix(in srgb,var(--primary) 14%,transparent)}
+.capture ol li::before{content:counter(cap);position:absolute;left:0;top:9px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.72rem;width:26px;height:26px;border-radius:8px;background:var(--primary);color:#fff;display:grid;place-items:center}
+.capture ol li b{color:var(--primary-deep);font-weight:600}
+.inspo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:var(--primary);background:var(--card);border:1px solid var(--line-strong);border-radius:999px;padding:9px 15px;margin-top:14px;box-shadow:var(--shadow);transition:background .15s,color .15s,border-color .15s}
+.inspo:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.inspo .ic{width:15px;height:15px}
+.playback{margin-top:16px;border:1px solid var(--line);border-radius:18px;padding:20px 24px;background:var(--card);box-shadow:var(--shadow)}
+.playback .ph{display:flex;align-items:center;gap:11px;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:1.16rem;color:var(--ink);margin:0 0 10px}
+.playback .ph .ic{width:23px;height:23px;flex:none;color:var(--primary)}
+.playback .beat{display:flex;gap:13px;align-items:flex-start;padding:10px 0;font-size:.97rem;line-height:1.55;color:var(--ink-soft)}
+.playback .beat+.beat{border-top:1px solid var(--line)}
+.playback .beat .tc{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.78rem;flex:none;color:#fff;background:var(--primary);border-radius:7px;padding:4px 9px;margin-top:1px;white-space:nowrap}
+.playback .beat b{color:var(--ink)}
+.playback .land{margin:12px 0 0;font-size:1rem;line-height:1.6;color:var(--primary-deep);font-weight:500}
+/* mastery stepper + skill node */
+.mstage{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 11px;font-family:'JetBrains Mono',monospace;font-size:.66rem;font-weight:700;color:#fff}
+.stepper{display:flex;gap:3px;margin-top:10px;flex-wrap:wrap}
+.stepper .st{flex:1;min-width:54px;border-radius:6px;padding:6px 4px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;background:#ECEFEA;color:var(--ink-faint);line-height:1.25}
+.stepper .st.done{background:var(--primary-soft);color:var(--primary)}
+.stepper .st.now{background:var(--primary);color:#fff}
+.skillnode{position:relative;display:block;text-decoration:none;border:1px solid var(--line);border-left:4px solid var(--sc,var(--primary));border-radius:12px;padding:13px 15px;background:var(--card);box-shadow:var(--shadow);cursor:pointer;transition:transform .15s,box-shadow .15s}
+.skillnode:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(20,40,30,.05),0 14px 30px -14px rgba(20,40,30,.2)}
+.skillnode .sname{font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;color:var(--ink)}
+.skillnode .sblurb{font-size:.8rem;color:var(--ink-soft);margin-top:3px;line-height:1.4}
 </style>
 </head><body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -255,6 +290,8 @@ textarea.input{min-height:80px;resize:vertical;line-height:1.5}
 <!-- DATA MODULES (content) — add new data.*.js files here as units ship -->
 <script src="data.core.js"></script>
 <script src="data.bibles.js"></script>
+<script src="data.skills.js"></script>
+<script src="data.curriculum.js"></script>
 <!-- ENGINE -->
 <script src="app.js"></script>
 </body></html>

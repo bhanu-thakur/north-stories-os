@@ -1,9 +1,10 @@
 /* North Stories OS — service worker
    Cache-first for the app shell; network-first for everything else.
    Bump CACHE when shipping a new unit so clients pick up changes. */
-var CACHE = "nsos-v1.2";
+var CACHE = "nsos-v1.3";
 var SHELL = [
-  "./", "./index.html", "./app.js", "./data.core.js", "./data.bibles.js", "./manifest.webmanifest"
+  "./", "./index.html", "./app.js", "./data.core.js", "./data.bibles.js",
+  "./data.skills.js", "./data.curriculum.js", "./manifest.webmanifest"
 ];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function(){ return self.skipWaiting(); }));

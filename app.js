@@ -335,6 +335,128 @@
     return html;
   };
 
+  /* ---- SKILL TREE + progressive mastery ---- */
+  var MASTERY=["Not Introduced","Introduced","Studying","Practiced","Applied","Reviewed","Portfolio Ready","Client Ready","Teaching Others","Mastered"];
+  var STAGE_COLORS=["var(--line-strong)","var(--c6)","var(--c3)","var(--c1)","var(--c1)","var(--primary)","var(--c2)","var(--watch)","var(--c4)","var(--good)"];
+  function stageIndex(st){ var i=MASTERY.indexOf(st); return i<0?0:i; }
+  function stageColor(st){ return STAGE_COLORS[stageIndex(st)]; }
+  function skillStage(id){ var s=store.get("skills",{}); return (s[id]&&s[id].stage)||"Not Introduced"; }
+  function setSkillStage(id,stage){ var s=store.get("skills",{}); s[id]=s[id]||{history:[]};
+    if(stageIndex(stage)>stageIndex(s[id].stage||"Not Introduced")||s[id].stage!==stage){ (s[id].history=s[id].history||[]).push({stage:stage,date:todayKey()}); }
+    s[id].stage=stage; store.set("skills",s); }
+  function skillById(id){ return (NS.skills||[]).find(function(s){return s.id===id;}); }
+  function projectById(id){ return (NS.curriculum||[]).find(function(p){return p.id===id;}); }
+  function projectsForSkill(id){ return (NS.curriculum||[]).filter(function(p){return (p.skills||[]).some(function(s){return s.skillId===id;});}); }
+  function stepper(st){ var idx=stageIndex(st); return '<div class="stepper">'+MASTERY.map(function(m,i){ var cls=i<idx?'done':(i===idx?'now':''); return '<div class="st '+cls+'">'+esc(m)+'</div>'; }).join("")+'</div>'; }
+
+  function skillPage(s){
+    var st=skillStage(s.id);
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="skills">Skill Tree</a>'+ic("i-chevron")+'<span>'+esc(s.name)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(s.name)+'</h1><p class="psub">'+esc(s.blurb)+'</p></div><span class="mstage" style="background:'+stageColor(st)+'">'+esc(st)+'</span></div>'+
+      '<div class="card"><div class="card-title"><span class="ico">'+ic("i-activity")+'</span><div><h3>Mastery</h3><div class="val">earned by application + review, not reading</div></div></div>'+stepper(st)+
+      '<div class="field" style="margin-top:14px"><label>Set current stage</label><select class="input" data-skillset="'+s.id+'">'+MASTERY.map(function(m){return '<option'+(m===st?' selected':'')+'>'+esc(m)+'</option>';}).join("")+'</select></div>'+
+      '<div class="note note--you">'+ic("i-bulb")+'<span>Completing a project that lists this skill advances it automatically. Update it here manually in the meantime.</span></div></div>';
+    if(s.outcomes&&s.outcomes.length) h+=listCard("Business outcomes it drives","i-cash",s.outcomes,false);
+    var conn="";
+    function grp(label,items,builder){ if(!items||!items.length) return; conn+='<div style="margin-bottom:12px"><div class="bl-h">'+esc(label)+'</div>'+items.map(builder).join("")+'</div>'; }
+    grp("Taught & extended by Bibles",s.bibles,function(id){ var b=bibleById(id); return '<span class="chiplink" data-go="bibles/'+id+'">'+ic("i-layers")+esc(b?b.title:id)+'</span>'; });
+    grp("Advanced by projects",projectsForSkill(s.id).map(function(p){return p.id;}),function(id){ var p=projectById(id); return '<span class="chiplink" data-go="curriculum/'+id+'">'+ic("i-camera")+esc(p?p.title:id)+'</span>'; });
+    grp("Builds on",s.dependsOn,function(id){ var d=skillById(id); return '<span class="chiplink" data-go="skills/'+id+'">'+ic("i-graph")+esc(d?d.name:id)+'</span>'; });
+    if(conn) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-graph")+'</span><div><h3>Connections</h3></div></div><div style="margin-top:12px">'+conn+'</div></div>';
+    return h;
+  }
+  VIEWS.skills = function(r){
+    if(r.param){ var s=skillById(r.param); return s?skillPage(s):VIEWS._placeholder(r); }
+    var html=head("Skill Tree","Skills are a graph, not a checklist — each one is grown by the projects that apply it and validated by reviews. Mastery is earned, not read.","Skill Tree");
+    (NS.skillBranches||[]).forEach(function(br){
+      var items=(NS.skills||[]).filter(function(s){return s.branch===br.id;}); if(!items.length) return;
+      html+='<div class="sec-head" style="margin-top:30px"><p class="eyebrow">'+esc(br.label)+'</p><h2 style="font-size:1.4rem">'+esc(br.label)+'</h2><p>'+esc(br.blurb)+'</p></div>'+
+        '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">'+items.map(function(s){ var st=skillStage(s.id);
+          return '<div class="skillnode" data-go="skills/'+s.id+'" style="--sc:'+stageColor(st)+'"><span class="sname">'+esc(s.name)+'</span><div class="sblurb">'+esc(s.blurb)+'</div><div style="margin-top:9px"><span class="mstage" style="background:'+stageColor(st)+'">'+esc(st)+'</span></div></div>'; }).join("")+'</div>';
+    });
+    return html;
+  };
+  VIEWS.skills.after = function(){ Array.prototype.forEach.call(document.querySelectorAll("[data-skillset]"),function(el){ el.addEventListener("change",function(){ setSkillStage(el.getAttribute("data-skillset"),el.value); render(); }); }); };
+
+  /* ---- CURRICULUM (project-based apprenticeship) ---- */
+  function researchURL(platform,q){ var e=encodeURIComponent(q); switch((platform||"").toLowerCase()){
+    case "google images": return "https://www.google.com/search?tbm=isch&q="+e;
+    case "pinterest": return "https://www.pinterest.com/search/pins/?q="+e;
+    case "instagram": return "https://www.instagram.com/explore/tags/"+encodeURIComponent(q.replace(/[^a-z0-9]/gi,""))+"/";
+    case "youtube": return "https://www.youtube.com/results?search_query="+e;
+    case "behance": return "https://www.behance.net/search/projects?search="+e;
+    default: return "https://www.google.com/search?q="+e; } }
+  function secCard(title,icon,bodyHtml,accent){ return '<div class="card'+(accent?' cat':'')+'"'+(accent?(' style="--bc:'+accent+'"'):'')+'><div class="card-title"><span class="ico">'+ic(icon)+'</span><div><h3>'+esc(title)+'</h3></div></div>'+bodyHtml+'</div>'; }
+  function skillChips(p){ if(!p.skills||!p.skills.length) return ""; return '<div class="card"><div class="card-title"><span class="ico">'+ic("i-activity")+'</span><div><h3>Skills it will advance</h3></div></div><div style="margin-top:10px">'+p.skills.map(function(s){var sk=skillById(s.skillId);return '<span class="chiplink" data-go="skills/'+s.skillId+'">'+ic("i-activity")+esc(sk?sk.name:s.skillId)+'</span>';}).join("")+'</div></div>'; }
+  function projectPage(p){
+    var ph=(NS.curriculumPhases||[]).find(function(x){return x.id===p.phase;});
+    var acc=ph?ph.accent:'var(--primary)';
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="curriculum">Curriculum</a>'+ic("i-chevron")+'<span>'+esc(p.title)+'</span></div>'+
+      '<div class="phead"><div><div class="eyebrow">Project '+String(p.order).padStart(2,"0")+(ph?' · '+esc(ph.label):'')+'</div><h1 class="ptitle" style="margin-top:10px">'+esc(p.title)+'</h1>'+(p.blurb?'<p class="psub">'+esc(p.blurb)+'</p>':'')+'</div></div>';
+    if(p.businessType||p.client) h+='<div class="row" style="margin-top:6px">'+(p.businessType?'<span class="pill pill--brand">'+esc(p.businessType)+'</span>':'')+(p.client?'<span class="tag">'+esc(p.client)+'</span>':'')+'</div>';
+    if(p.status!=="available"){
+      h+='<div class="empty" style="margin-top:20px">'+ic("i-camera")+'<p style="margin-top:12px;font-size:1rem;color:var(--ink-soft)"><b>Planned engagement.</b></p><p style="max-width:50ch;margin:8px auto 0">The full brief, shot list, workflow, deliverables and pricing are authored as their own unit. This project will advance the skills below.</p></div>';
+      return h+skillChips(p);
+    }
+    if(p.gearChips) h+='<div class="chips">'+p.gearChips.map(function(c){return '<span class="tnode">'+ic(c.icon)+esc(c.label)+'</span>';}).join("")+'</div>';
+    h+='<div class="stats" style="--n:3;margin-top:18px">'+
+      '<div class="stat"><div class="big">'+(p.shots?p.shots.length:'—')+'</div><div class="lbl">Shots</div><div class="sub">'+esc(p.reelLength||"")+' final</div></div>'+
+      '<div class="stat" style="--cat:var(--c2)"><div class="big" style="font-size:1.4rem;margin-top:8px">'+esc((p.timeBudget||"—").split("·")[0].trim())+'</div><div class="lbl">Time budget</div><div class="sub">'+esc(p.timeBudget||"")+'</div></div>'+
+      '<div class="stat" style="--cat:var(--c4)"><div class="big">'+(p.deliverables?p.deliverables.length:0)+'</div><div class="lbl">Deliverables</div><div class="sub">Real business assets</div></div></div>';
+    if(p.brief) h+=secCard("The brief","i-target",'<ul class="list" style="--bc:'+acc+'">'+
+      (p.brief.objective?'<li><b>Objective.</b> '+md(p.brief.objective)+'</li>':'')+
+      (p.brief.audience?'<li><b>Audience.</b> '+md(p.brief.audience)+'</li>':'')+
+      (p.brief.psychology?'<li><b>Customer psychology.</b> '+md(p.brief.psychology)+'</li>':'')+
+      (p.brief.positioning?'<li><b>Luxury positioning.</b> '+md(p.brief.positioning)+'</li>':'')+'</ul>',acc);
+    if(p.creativeDirection) h+=secCard("Creative direction","i-palette",'<p class="lead" style="color:var(--ink)">'+md(p.creativeDirection)+'</p>');
+    if(p.viralAutopsy){ var va=p.viralAutopsy; h+=secCard("Why it stops the scroll","i-eye",
+      '<ul class="list">'+(va.triggers||[]).map(function(t){return '<li><b>'+esc(t.k)+'.</b> '+md(t.body)+'</li>';}).join("")+'</ul>'+
+      (va.borrow?'<div class="note note--done">'+ic("i-star")+'<span><b>Borrow from the pros.</b> '+md(va.borrow)+'</span></div>':'')); }
+    if(p.storyboard){ var sb=p.storyboard,body='';
+      if(sb.beats) body+='<div class="track">'+sb.beats.map(function(b){return '<div class="seg seg--'+(b.seg||'flat')+'" style="flex:1"><span class="sname">'+esc(b.name)+'</span><span class="srange">'+esc(b.range||"")+'</span></div>';}).join("")+'</div>';
+      if(sb.light) body+='<div class="note note--you">'+ic("i-clock")+'<span><b>Best light.</b> '+md(sb.light)+'</span></div>';
+      if(sb.playback) body+='<div class="playback"><div class="ph">'+ic("i-activity")+' Picture it playing on Instagram</div>'+sb.playback.map(function(x){return '<div class="beat"><span class="tc">'+esc(x.tc)+'</span><span>'+md(x.body)+'</span></div>';}).join("")+(sb.land?'<p class="land">'+md(sb.land)+'</p>':'')+'</div>';
+      h+=secCard("Storyboard","i-map",body); }
+    if(p.shots) p.shots.forEach(function(sh){
+      var body='<p class="lead" style="color:var(--ink)"><b>Purpose:</b> '+md(sh.purpose)+'</p>';
+      if(sh.settings) body+='<div class="minigrid" style="--m:3;margin-top:14px">'+sh.settings.map(function(c){return '<div class="cell'+(c.lever?' lever':'')+'"><div class="t">'+esc(c.t)+'</div><div class="v">'+esc(c.v)+(c.sub?' <small>'+esc(c.sub)+'</small>':'')+'</div></div>';}).join("")+'</div>';
+      var g2=''; if(sh.brightness)g2+='<li><b>Exposure.</b> '+md(sh.brightness)+'</li>'; if(sh.framing)g2+='<li><b>Framing.</b> '+md(sh.framing)+'</li>'; if(sh.mistakes)g2+='<li><b>Common mistake.</b> '+md(sh.mistakes)+'</li>';
+      if(g2) body+='<ul class="list" style="margin-top:14px">'+g2+'</ul>';
+      if(sh.capture) body+='<div class="capture"><div class="ch">'+ic("i-walk")+' How to capture it</div>'+(sh.capture.intro?'<p class="intro">'+md(sh.capture.intro)+'</p>':'')+'<ol>'+(sh.capture.steps||[]).map(function(x){return '<li>'+md(x)+'</li>';}).join("")+'</ol>'+(sh.inspo?'<a class="inspo" href="'+esc(sh.inspo.url)+'" target="_blank" rel="noopener">'+ic("i-compass")+esc(sh.inspo.label)+'</a>':'')+'</div>';
+      if(sh.ideas) body+='<ul class="list" style="--bc:'+acc+';margin-top:12px">'+sh.ideas.map(function(x){return '<li>'+md(x)+'</li>';}).join("")+'</ul>';
+      h+='<div class="card cat" style="--bc:'+acc+'"><div class="card-top"><div class="card-title"><span class="ico">'+ic("i-camera")+'</span><div><h3>'+esc(sh.name)+'</h3>'+(sh.role?'<div class="val">'+esc(sh.role)+'</div>':'')+'</div></div>'+(sh.lens?'<span class="pill pill--brand">'+esc(sh.lens)+'</span>':'')+'</div>'+body+'</div>';
+    });
+    h+=listCard("Editing","i-film",p.editing,true);
+    h+=listCard("Colour","i-palette",p.color,true);
+    h+=listCard("Audio","i-mic",p.audio,true);
+    if(p.exportNote) h+=secCard("Export","i-arrow",'<p class="lead" style="color:var(--ink)">'+md(p.exportNote)+'</p>');
+    if(p.monetization||p.pricing){ var pb=''; if(p.monetization)pb+='<p class="lead" style="color:var(--ink)">'+md(p.monetization)+'</p>';
+      if(p.pricing)pb+='<ul class="list" style="--bc:var(--c2);margin-top:8px">'+(p.pricing.quote?'<li><b>Quote.</b> '+md(p.pricing.quote)+'</li>':'')+(p.pricing.upsell?'<li><b>Upsell.</b> '+md(p.pricing.upsell)+'</li>':'')+(p.pricing.retainer?'<li><b>Retainer.</b> '+md(p.pricing.retainer)+'</li>':'')+'</ul>';
+      h+=secCard("The money","i-cash",pb); }
+    if(p.deliverables){ var prog=(store.get("projDeliv",{})[p.id])||{};
+      h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-check")+'</span><div><h3>Deliverables</h3><div class="val">the real business assets</div></div></div>'+
+        p.deliverables.map(function(d){var on=!!prog[d.id]; return '<div class="check'+(on?' on':'')+'" data-deliv="'+p.id+'|'+d.id+'"><span class="box">'+ic("i-check")+'</span><span class="lab">'+esc(d.label)+'</span></div>';}).join("")+'</div>'; }
+    if(p.skills){ var done=store.get("projDone",{})[p.id];
+      h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-graph")+'</span><div><h3>Skills this project advances</h3></div></div><div style="margin-top:10px">'+p.skills.map(function(s){var sk=skillById(s.skillId); return '<span class="chiplink" data-go="skills/'+s.skillId+'">'+ic("i-activity")+esc(sk?sk.name:s.skillId)+(s.toStage?' → '+esc(s.toStage):'')+'</span>';}).join("")+'</div>'+
+        '<div class="row" style="margin-top:14px">'+(done?'<span class="pill pill--good">Completed '+esc(done)+'</span>':'<span class="btn btn--primary" data-complete="'+p.id+'">'+ic("i-check")+' Mark complete &amp; advance skills</span>')+'</div></div>'; }
+    if(p.bibleUpdates) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-layers")+'</span><div><h3>Bible updates</h3><div class="val">what this project teaches the manuals</div></div></div><ul class="list">'+p.bibleUpdates.map(function(b){var bb=bibleById(b.bibleId); return '<li><b><a data-go="bibles/'+b.bibleId+'">'+esc(bb?bb.title:b.bibleId)+'</a>:</b> '+md(b.note)+'</li>';}).join("")+'</ul></div>';
+    if(p.research) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-search")+'</span><div><h3>Research</h3></div></div><div style="margin-top:10px">'+p.research.map(function(rq){return '<a class="inspo" style="margin:0 8px 8px 0" href="'+esc(researchURL(rq.platform,rq.query))+'" target="_blank" rel="noopener">'+ic("i-ext")+esc(rq.platform)+': '+esc(rq.query)+'</a>';}).join("")+'</div></div>';
+    h+=listCard("Reflection","i-bulb",p.reflection,false);
+    h+=listCard("Review questions","i-flag",p.reviewQuestions,false);
+    return h;
+  }
+  VIEWS.curriculum = function(r){
+    if(r.param){ var p=projectById(r.param); return p?projectPage(p):VIEWS._placeholder(r); }
+    var html=head("Curriculum","A project-based apprenticeship. Each project is a real hospitality engagement that ships business assets and moves skills forward — theory only serves the project.","Curriculum");
+    (NS.curriculumPhases||[]).forEach(function(ph){
+      var items=(NS.curriculum||[]).filter(function(p){return p.phase===ph.id;}); if(!items.length) return;
+      html+='<article class="card cat" style="--bc:'+ph.accent+';margin-top:18px"><div class="card-top"><div class="card-title"><span class="ico">'+ic(ph.icon)+'</span><div><h3>'+esc(ph.label)+'</h3><div class="val">'+esc(ph.blurb)+'</div></div></div></div>'+
+        '<div class="cardgrid" style="margin-top:16px">'+items.map(function(p){ var avail=p.status==="available";
+          return '<div class="'+(avail?'tile':'tile lock')+'" style="--dc:'+ph.accent+'"'+(avail?(' data-go="curriculum/'+p.id+'"'):'')+'><div class="tn">PROJECT '+String(p.order).padStart(2,"0")+' '+ic(avail?"i-arrow":"i-lock")+'</div><div class="tt">'+esc(p.title)+'</div><div class="td">'+esc(p.blurb)+'</div><div class="go">'+(avail?'Open':'Planned')+' '+ic(avail?"i-arrow":"i-lock")+'</div></div>'; }).join("")+'</div></article>';
+    });
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -346,6 +468,8 @@
       // also log habit streak if it's the habit row toggled on
       if(k==="habit" && t.done.habit && t.habitId){ var hb=store.get("habits",{}); hb[t.habitId]=hb[t.habitId]||{log:{}}; hb[t.habitId].log[todayKey()]=true; store.set("habits",hb); }
       render(); return; }
+    var dv=e.target.closest("[data-deliv]"); if(dv){ var pp=dv.getAttribute("data-deliv").split("|"); var pd=store.get("projDeliv",{}); pd[pp[0]]=pd[pp[0]]||{}; pd[pp[0]][pp[1]]=!pd[pp[0]][pp[1]]; store.set("projDeliv",pd); render(); return; }
+    var cpl=e.target.closest("[data-complete]"); if(cpl){ var pid=cpl.getAttribute("data-complete"); var pr=projectById(pid); if(pr&&pr.skills){ pr.skills.forEach(function(s){ if(s.toStage) setSkillStage(s.skillId,s.toStage); }); } var dn=store.get("projDone",{}); dn[pid]=todayKey(); store.set("projDone",dn); render(); return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
