@@ -17,7 +17,8 @@ NS.curriculumPhases = [
   { id:"s1", label:"Stage 1 · First assets",        accent:"var(--c1)", icon:"i-camera", blurb:"Build the first portfolio pieces through homestay & café engagements." },
   { id:"s2", label:"Stage 2 · First paying clients", accent:"var(--c2)", icon:"i-cash",   blurb:"Boutique hotels, restaurants and salons — booked, paid work." },
   { id:"s3", label:"Stage 3 · Premium & retainers",  accent:"var(--c4)", icon:"i-star",   blurb:"Resorts, luxury brands and recurring monthly revenue." },
-  { id:"s4", label:"Stage 4 · Studio & scale",       accent:"var(--c3)", icon:"i-users",  blurb:"Multi-deliverable systems, trained editors, agency operations." }
+  { id:"s4", label:"Stage 4 · Studio & scale",       accent:"var(--c3)", icon:"i-users",  blurb:"Multi-deliverable systems, trained editors, agency operations." },
+  { id:"s5", label:"Stage 5 · Authority & expansion",accent:"var(--c5)", icon:"i-flag",   blurb:"Destination campaigns, brand collaborations, teaching, and the studio showreel." }
 ];
 
 /* ---------- PROJECT 01 — authored in full ---------- */
@@ -102,9 +103,47 @@ var P01 = {
       inspo:{ label:"Cosy Himalayan room interior wide — Google Images", url:"https://www.google.com/search?tbm=isch&q=cosy+himalayan+homestay+room+window+interior+wide+cinematic" },
       ideas:["Corner showing two walls and the rainy window.","Window-seat nook with the valley beyond.","Reading corner with lamp glow against grey daylight."] }
   ],
-  editing:["Import the 3 clips; set a 1080×1920 vertical, 24 fps timeline.","Trim each to its calmest 2–3s; order A → B → C.","Match cuts on stillness; keep it 8–10s and loop-friendly (end near Shot A).","Lay gentle ambience (rain / room tone) under everything."],
-  color:["Balance to neutral first (set a white point on a known white).","Warm it slightly toward the 4800 K mood; lift shadows gently, never crush.","Check scopes — keep the window off the top; protect the highlights.","Match all three shots to one consistent look."],
-  audio:["Lay a soft rain / room-tone bed at a low level.","Duck it under any music; keep it felt, not loud.","Target around −18 dBFS average; no clipping."],
+  editing:{ page:"Cut / Edit page · grounded in The Editor (Resolve 20/21)",
+    intro:"Three clips into one calm, loop-friendly 8–10s reel — re-taught from the Editor guide, not copied. Verify menu names against your Resolve 21 build.",
+    steps:[
+      "**Make the project & set it vertical.** New project; set the timeline resolution to **1080×1920** (9:16). *(Editor: 'Building the Rough Cut → Setting Up a Project'; 'Project Organization → Creating a New Project'.)*",
+      "**Import the three clips** into the Media Pool. *(Editor: 'Importing Media'.)*",
+      "**Append them A → B → C.** Select a clip and press **F12** to append it to the end. *(Editor: 'Insert and Append at End Edits'.)*",
+      "**Trim to the best 2–3 seconds each.** Set an in/out with **I** and **O**, or blade with **B** and delete the rest. *(Editor: 'Trimming the Timeline Clips'.)*",
+      "**Pace it** to a calm 8–10s total — hold a shot only as long as it stays interesting.",
+      "**Make it loop:** end on a frame close to Shot A so the reel cycles seamlessly."
+    ],
+    grid:[{t:"Play / stop",v:"Space"},{t:"Shuttle",v:"J  K  L"},{t:"In / out",v:"I   O"},{t:"Blade",v:"B"},{t:"Append",v:"F12"},{t:"Undo",v:"Ctrl/⌘ Z",lever:true}],
+    note:"The Cut page's smart trimming is the fastest way to top-and-tail clips when you're new — get comfortable there before graduating to the Edit page's precision trims." },
+  color:{ page:"Color page · Primaries · grounded in The Colorist",
+    intro:"Today is one clean, honest balance — creative looks come later. A natural, well-exposed grade is what makes a property read as premium.",
+    steps:[
+      "**Open the Color page and turn on the Waveform / Parade scopes.** *(Colorist: 'Balancing Footage → Understanding the Grading Workflow'.)*",
+      "**Add a serial node** (**Alt/⌥ S**) so the grade is non-destructive.",
+      "**Set black & white points.** Use **Lift** to sit the darkest shadow just above 0, and **Gain** to bring the brightest highlight near — but never past — the top of the scope. *(Colorist: 'Primary Grading with Color Wheels'.)*",
+      "**Fine-tune the midtones** with a gentle S-curve if they feel flat. *(Colorist: 'Precision Grading with Curves'.)*",
+      "**Match the three shots** so they feel like one room — line up wood and skin tones across clips on the Parade."
+    ],
+    grid:[{t:"Add serial node",v:"Alt/⌥ S"},{t:"Toggle node",v:"Ctrl/⌘ D"},{t:"Watch",v:"Waveform · Parade",lever:true}],
+    note:"The Parade's top must stop short of clipping — if it flattens against the ceiling, the window detail is already gone.", noteType:"warn" },
+  audio:{ page:"Edit / Fairlight page · grounded in Mixing Audio",
+    intro:"The simplest soundtrack: a single music bed at the right level, with a soft room-tone whisper beneath it.",
+    steps:[
+      "**Import a licensed / royalty-free track** you can legally post into the Media Pool. *(Audio: 'Importing Audio Files and Creating a Timeline'.)*",
+      "**Drop it on an audio track** under your clips and trim it to length. *(Audio: 'Marking and Adding Music to the Timeline'.)*",
+      "**Set the level** in the Inspector so the music supports the picture without shouting. *(Audio: 'Changing Clip Volume Levels in the Inspector'.)*",
+      "**Lay a soft rain / room-tone bed** beneath, ducked under the music — felt, not loud.",
+      "**Add a short fade in and out** by dragging the fade handles at each end of the clip."
+    ],
+    grid:[{t:"Music peaks",v:"≈ −6 dB",sub:"on the meter",lever:true},{t:"Never exceed",v:"0 dB",sub:"no clipping"},{t:"Target loudness",v:"≈ −14 LUFS",sub:"IG-friendly"}],
+    note:"Instagram normalises loud uploads down, so mixing around −14 LUFS with peaks near −6 dB keeps the reel punchy but clean." },
+  locations:[
+    { name:"Café Simla Times", area:"Mall Road, Shimla", why:"Huge windows with panoramic Himalayan views and colonial-cosy interiors — a ready-made window-corner set.", maps:"https://www.google.com/maps/search/?api=1&query=Cafe+Simla+Times+Mall+Road+Shimla" },
+    { name:"Honey Hut Café", area:"near Scandal Point, Shimla", why:"Rustic wooden tables, warm earthy light and valley views — strong for the detail (Shot B) and cosy wides.", maps:"https://www.google.com/maps/search/?api=1&query=Honey+Hut+Cafe+Shimla" },
+    { name:"Wake & Bake Café", area:"The Ridge, Shimla", why:"Cosy rooftop and rustic decor overlooking hills — good for warm interiors against an overcast sky.", maps:"https://www.google.com/maps/search/?api=1&query=Wake+and+Bake+Cafe+Shimla" },
+    { name:"Mahasu House", area:"Mashobra (~15 km / 45 min)", why:"Boutique homestay with tastefully designed cosy rooms and big mountain views — ideal for the homestay brief.", maps:"https://www.google.com/maps/search/?api=1&query=Mahasu+House+Mashobra" },
+    { name:"Hushstays · Jagheri Bagh", area:"Mashobra", why:"Oversized windows framing the hills and a cosy library nook — the exact 'window-seat with a book' frame.", maps:"https://www.google.com/maps/search/?api=1&query=Hushstays+Jagheri+Bagh+Mashobra" }
+  ],
   exportNote:"Use the one-time Instagram master recipe (H.264 MP4, 1080×1920, match 24 fps, ~20 Mbps, AAC 320 / 48 k). Never let highlights clip.",
   monetization:"This is the core homestay 'cosy room' clip — the unit that sells a stay. On a package it's the portfolio anchor and the proof a homestay needs to say yes to a shoot.",
   pricing:{ quote:"Starter homestay reel: ₹6,000–10,000 (3–5 cosy clips + 1 reel).", upsell:"Add a detail / food set, or a 5-beat formula reel.", retainer:"Monthly 'fresh reel' retainer once they see bookings move." },
@@ -122,17 +161,38 @@ function stub(id,order,phase,title,blurb,businessType,skills){
   return { id:id, order:order, phase:phase, status:"planned", title:title, blurb:blurb, businessType:businessType, skills:(skills||[]).map(function(s){return {skillId:s};}) };
 }
 NS.curriculum = [ P01,
+  /* Stage 1 · First assets */
   stub("p02",2,"s1","The café morning","An independent café — first light, the signature drink, the regulars' ritual.","Café",["food-cinematography","lighting","restaurant-marketing"]),
   stub("p03",3,"s1","The full stay story","A homestay's complete arrival → view → room → detail → host reel.","Homestay",["hotel-cinematography","editing","hospitality-psychology"]),
-  stub("p04",4,"s2","Boutique hotel hero","A boutique hotel's hero property film + a room set for the website & Google Business.","Boutique hotel",["hotel-cinematography","creative-direction","client-communication"]),
-  stub("p05",5,"s2","Restaurant table-top","A restaurant's signature-dish story + menu hero stills.","Restaurant",["food-cinematography","restaurant-marketing","pricing"]),
-  stub("p06",6,"s2","The calm transformation","A salon / spa reel that sells care and transformation, not a service list.","Salon / spa",["creative-direction","hospitality-psychology","sales"]),
-  stub("p07",7,"s3","Mountain resort brand film","A premium resort brand film with ground + sub-250g aerials.","Resort",["hotel-cinematography","colour","luxury-positioning"]),
-  stub("p08",8,"s3","Tea estate experience","A tea estate / apple orchard destination-experience film.","Destination",["creative-direction","composition","luxury-positioning"]),
-  stub("p09",9,"s3","Venue as experience","A wedding venue sold as a premium experience, not a hall.","Wedding venue",["hotel-cinematography","hospitality-psychology","negotiation"]),
-  stub("p10",10,"s4","The content retainer","A multi-property monthly content system — one shoot day, many assets.","Retainer",["agency-operations","editing","client-communication"]),
-  stub("p11",11,"s4","The signature look","A luxury brand collaboration delivering a reusable house grade / LUT.","Luxury brand",["colour","creative-direction","luxury-positioning"]),
-  stub("p12",12,"s4","Studio handoff","Train an editor on the SOPs and deliver the standard without you.","Studio",["agency-operations","client-communication","pricing"])
+  stub("p04",4,"s1","The detail & texture set","A set of tactile detail clips — wood, brass, ceramic, linen, steam — reusable B-roll.","Homestay / café",["composition","lighting","food-cinematography"]),
+  stub("p05",5,"s1","The signature drink","A single hero drink film — pour, steam, garnish — for a café's menu and socials.","Café",["food-cinematography","editing","lighting"]),
+  stub("p06",6,"s1","Your first pitch reel","Cut your own showreel from these assets — the thing that wins the first client.","Studio",["editing","creative-direction","client-communication"]),
+  /* Stage 2 · First paying clients */
+  stub("p07",7,"s2","Boutique hotel hero","A boutique hotel's hero property film + a room set for the website & Google Business.","Boutique hotel",["hotel-cinematography","creative-direction","client-communication"]),
+  stub("p08",8,"s2","Restaurant table-top","A restaurant's signature-dish story + menu hero stills.","Restaurant",["food-cinematography","restaurant-marketing","pricing"]),
+  stub("p09",9,"s2","The calm transformation","A salon / spa reel that sells care and transformation, not a service list.","Salon / spa",["creative-direction","hospitality-psychology","sales"]),
+  stub("p10",10,"s2","Room-by-room set","A hotel's full set of room-type films for OTAs and direct bookings.","Boutique hotel",["hotel-cinematography","editing","client-communication"]),
+  stub("p11",11,"s2","The menu film","A restaurant's full menu brought to life — dish films + photography.","Restaurant",["food-cinematography","composition","pricing"]),
+  stub("p12",12,"s2","The host story","The owner / host on camera — the trust-builder that sells a small stay.","Homestay",["hospitality-psychology","sound","client-communication"]),
+  /* Stage 3 · Premium & retainers */
+  stub("p13",13,"s3","Mountain resort brand film","A premium resort brand film with ground + sub-250g aerials.","Resort",["hotel-cinematography","colour","luxury-positioning"]),
+  stub("p14",14,"s3","Tea estate experience","A tea estate destination-experience film — landscape, ritual, craft.","Destination",["creative-direction","composition","luxury-positioning"]),
+  stub("p15",15,"s3","Venue as experience","A wedding venue sold as a premium experience, not a hall.","Wedding venue",["hotel-cinematography","hospitality-psychology","negotiation"]),
+  stub("p16",16,"s3","The seasonal refresh","A retainer-style seasonal content drop for an existing client.","Retainer",["editing","creative-direction","client-communication"]),
+  stub("p17",17,"s3","The spa ritual film","A luxury spa ritual — slow, sensorial, restraint-led.","Spa",["lighting","creative-direction","luxury-positioning"]),
+  stub("p18",18,"s3","Apple orchard harvest","A Himachal apple orchard harvest story — destination & produce branding.","Destination",["composition","creative-direction","food-cinematography"]),
+  /* Stage 4 · Studio & scale */
+  stub("p19",19,"s4","The content retainer system","A multi-property monthly content system — one shoot day, many assets.","Retainer",["agency-operations","editing","client-communication"]),
+  stub("p20",20,"s4","The signature look","A reusable house grade / LUT and a look-book for consistent delivery.","Studio",["colour","creative-direction","luxury-positioning"]),
+  stub("p21",21,"s4","Studio handoff","Train an editor on the SOPs and deliver the standard without you.","Studio",["agency-operations","client-communication","pricing"]),
+  stub("p22",22,"s4","The pitch deck reel","A sales asset — the deck + reel that closes premium clients.","Studio",["sales","creative-direction","pricing"]),
+  stub("p23",23,"s4","The case-study system","A repeatable case-study template that turns every job into new business.","Studio",["agency-operations","client-communication","sales"]),
+  /* Stage 5 · Authority & expansion */
+  stub("p24",24,"s5","The destination campaign","A multi-property campaign positioning a whole area as a premium destination.","Destination",["creative-direction","luxury-positioning","agency-operations"]),
+  stub("p25",25,"s5","The brand collaboration","A luxury brand collaboration delivering co-branded films.","Luxury brand",["luxury-positioning","creative-direction","negotiation"]),
+  stub("p26",26,"s5","The tourism board pitch","A pitch to a tourism board / association for ongoing destination work.","Institution",["sales","negotiation","client-communication"]),
+  stub("p27",27,"s5","Teaching others","Package the system as a workshop / course — teach to deepen mastery.","Studio",["agency-operations","creative-direction","sales"]),
+  stub("p28",28,"s5","The studio showreel","The flagship showreel — the studio's signature, refreshed yearly.","Studio",["editing","creative-direction","luxury-positioning"])
 ];
 
 if (window.NS && typeof NS.rebuild === "function") NS.rebuild();

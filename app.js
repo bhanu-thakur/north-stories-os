@@ -388,6 +388,16 @@
     default: return "https://www.google.com/search?q="+e; } }
   function secCard(title,icon,bodyHtml,accent){ return '<div class="card'+(accent?' cat':'')+'"'+(accent?(' style="--bc:'+accent+'"'):'')+'><div class="card-title"><span class="ico">'+ic(icon)+'</span><div><h3>'+esc(title)+'</h3></div></div>'+bodyHtml+'</div>'; }
   function skillChips(p){ if(!p.skills||!p.skills.length) return ""; return '<div class="card"><div class="card-title"><span class="ico">'+ic("i-activity")+'</span><div><h3>Skills it will advance</h3></div></div><div style="margin-top:10px">'+p.skills.map(function(s){var sk=skillById(s.skillId);return '<span class="chiplink" data-go="skills/'+s.skillId+'">'+ic("i-activity")+esc(sk?sk.name:s.skillId)+'</span>';}).join("")+'</div></div>'; }
+  function renderWorkflow(title,icon,wf,accent){
+    if(!wf) return "";
+    if(Array.isArray(wf)) return listCard(title,icon,wf,true);
+    var h='<div class="card cat" style="--bc:'+(accent||'var(--primary)')+'"><div class="card-title"><span class="ico">'+ic(icon)+'</span><div><h3>'+esc(title)+'</h3>'+(wf.page?'<div class="val">'+esc(wf.page)+'</div>':'')+'</div></div>';
+    if(wf.intro) h+='<p class="lead" style="color:var(--ink)">'+md(wf.intro)+'</p>';
+    if(wf.steps) h+='<ol class="steps">'+wf.steps.map(function(s){var t=(typeof s==="string")?s:(s.do||""); var why=(s&&s.why)?' '+s.why:''; return '<li><div>'+md(t+why)+'</div></li>';}).join("")+'</ol>';
+    if(wf.grid) h+='<div class="minigrid" style="--m:3;margin-top:14px">'+wf.grid.map(function(c){return '<div class="cell'+(c.lever?' lever':'')+'"><div class="t">'+esc(c.t)+'</div><div class="v">'+esc(c.v)+(c.sub?' <small>'+esc(c.sub)+'</small>':'')+'</div></div>';}).join("")+'</div>';
+    if(wf.note) h+='<div class="note note--'+(wf.noteType==="warn"?"warn":"you")+'">'+ic(wf.noteType==="warn"?"i-warn":"i-bulb")+'<span>'+md(wf.note)+'</span></div>';
+    return h+'</div>';
+  }
   function projectPage(p){
     var ph=(NS.curriculumPhases||[]).find(function(x){return x.id===p.phase;});
     var acc=ph?ph.accent:'var(--primary)';
@@ -417,6 +427,7 @@
       if(sb.light) body+='<div class="note note--you">'+ic("i-clock")+'<span><b>Best light.</b> '+md(sb.light)+'</span></div>';
       if(sb.playback) body+='<div class="playback"><div class="ph">'+ic("i-activity")+' Picture it playing on Instagram</div>'+sb.playback.map(function(x){return '<div class="beat"><span class="tc">'+esc(x.tc)+'</span><span>'+md(x.body)+'</span></div>';}).join("")+(sb.land?'<p class="land">'+md(sb.land)+'</p>':'')+'</div>';
       h+=secCard("Storyboard","i-map",body); }
+    if(p.locations) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-map")+'</span><div><h3>Where to shoot this</h3><div class="val">real spots to scout — Shimla &amp; around</div></div></div><ul class="list">'+p.locations.map(function(l){return '<li><b>'+esc(l.name)+'</b> — '+esc(l.area)+'. '+md(l.why)+' <a class="chiplink" href="'+esc(l.maps)+'" target="_blank" rel="noopener">'+ic("i-pin")+'Open in Maps</a></li>';}).join("")+'</ul><div class="note note--warn">'+ic("i-warn")+'<span>Scouting suggestions from a quick web scan — verify they\'re still open and suitable, and always ask permission before filming inside a business.</span></div></div>';
     if(p.shots) p.shots.forEach(function(sh){
       var body='<p class="lead" style="color:var(--ink)"><b>Purpose:</b> '+md(sh.purpose)+'</p>';
       if(sh.settings) body+='<div class="minigrid" style="--m:3;margin-top:14px">'+sh.settings.map(function(c){return '<div class="cell'+(c.lever?' lever':'')+'"><div class="t">'+esc(c.t)+'</div><div class="v">'+esc(c.v)+(c.sub?' <small>'+esc(c.sub)+'</small>':'')+'</div></div>';}).join("")+'</div>';
@@ -426,9 +437,9 @@
       if(sh.ideas) body+='<ul class="list" style="--bc:'+acc+';margin-top:12px">'+sh.ideas.map(function(x){return '<li>'+md(x)+'</li>';}).join("")+'</ul>';
       h+='<div class="card cat" style="--bc:'+acc+'"><div class="card-top"><div class="card-title"><span class="ico">'+ic("i-camera")+'</span><div><h3>'+esc(sh.name)+'</h3>'+(sh.role?'<div class="val">'+esc(sh.role)+'</div>':'')+'</div></div>'+(sh.lens?'<span class="pill pill--brand">'+esc(sh.lens)+'</span>':'')+'</div>'+body+'</div>';
     });
-    h+=listCard("Editing","i-film",p.editing,true);
-    h+=listCard("Colour","i-palette",p.color,true);
-    h+=listCard("Audio","i-mic",p.audio,true);
+    h+=renderWorkflow("Editing","i-film",p.editing,"var(--c3)");
+    h+=renderWorkflow("Colour","i-palette",p.color,"var(--c4)");
+    h+=renderWorkflow("Audio","i-mic",p.audio,"var(--c5)");
     if(p.exportNote) h+=secCard("Export","i-arrow",'<p class="lead" style="color:var(--ink)">'+md(p.exportNote)+'</p>');
     if(p.monetization||p.pricing){ var pb=''; if(p.monetization)pb+='<p class="lead" style="color:var(--ink)">'+md(p.monetization)+'</p>';
       if(p.pricing)pb+='<ul class="list" style="--bc:var(--c2);margin-top:8px">'+(p.pricing.quote?'<li><b>Quote.</b> '+md(p.pricing.quote)+'</li>':'')+(p.pricing.upsell?'<li><b>Upsell.</b> '+md(p.pricing.upsell)+'</li>':'')+(p.pricing.retainer?'<li><b>Retainer.</b> '+md(p.pricing.retainer)+'</li>':'')+'</ul>';

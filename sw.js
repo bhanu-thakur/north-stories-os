@@ -1,7 +1,7 @@
 /* North Stories OS — service worker
    Cache-first for the app shell; network-first for everything else.
    Bump CACHE when shipping a new unit so clients pick up changes. */
-var CACHE = "nsos-v1.3";
+var CACHE = "nsos-v1.4";
 var SHELL = [
   "./", "./index.html", "./app.js", "./data.core.js", "./data.bibles.js",
   "./data.skills.js", "./data.curriculum.js", "./manifest.webmanifest"
