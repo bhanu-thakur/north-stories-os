@@ -192,9 +192,13 @@
     var streak=computeStreak();
     var im=incomeMilestone();
     var pending=crm.filter(function(c){return c.nextAction;}).length;
+    var cd=cdTodayDrill();
+    var skillsAdv=(NS.skills||[]).filter(function(s){return skillStage(s.id)!=="Not Introduced";}).length;
+    var pipe={lead:0,prospect:0,client:0,past:0}; crm.forEach(function(c){ if(pipe[c.stage]!=null) pipe[c.stage]++; });
+    var revPct=im.next?Math.min(100,Math.round(im.total/im.next*100)):100;
     var rows=[
       {k:"mission",icon:"i-target",label:"Today’s Mission",ph:"What is the one outcome today?",val:t.mission},
-      {k:"lessonId",icon:"i-book",label:"Today’s Lesson",lesson:true,val:t.lessonId},
+      {k:"lessonId",icon:"i-book",label:"Today’s Project",lesson:true,val:t.lessonId},
       {k:"review",icon:"i-eye",label:"Today’s Review",ph:"One thing to study / critique",val:t.review},
       {k:"shoot",icon:"i-camera",label:"Today’s Shoot",ph:"What will you capture?",val:t.shoot},
       {k:"businessTask",icon:"i-bag",label:"Today’s Business Task",ph:"One money-moving action",val:t.businessTask},
@@ -209,9 +213,10 @@
       var control;
       if(r.lesson){
         control = lessons.length
-          ? '<select class="input" data-tset="lessonId"><option value="">— pick a lesson —</option>'+
+          ? '<select class="input" data-tset="lessonId"><option value="">— pick a project —</option>'+
             lessons.map(function(l){return '<option value="'+l.id+'"'+(t.lessonId===l.id?' selected':'')+'>'+esc(l.title)+'</option>';}).join("")+'</select>'
           : '<input class="input" data-tset="lessonId" value="'+esc(t.lessonId||"")+'" placeholder="Curriculum loads here once authored">';
+        if(t.lessonId){ var pp=(NS.curriculum||[]).find(function(x){return x.id===t.lessonId;}); if(pp&&pp.status==="available") control+='<div style="margin-top:8px"><span class="chiplink" data-go="curriculum/'+pp.id+'">'+ic("i-arrow")+'Open project</span></div>'; }
       } else if(r.habit){
         var habits=NS.habitSeeds||[];
         control='<select class="input" data-tset="habitId"><option value="">— pick a habit —</option>'+
@@ -236,14 +241,24 @@
       '<div class="stat" style="--cat:var(--c2)"><div class="big">₹'+(im.next/1000)+'k</div><div class="lbl">Next milestone</div><div class="sub">₹'+im.total.toLocaleString("en-IN")+' earned so far</div></div>'+
       '<div class="stat" style="--cat:var(--c4)"><div class="big">'+pending+'</div><div class="lbl">Pending actions</div><div class="sub">Open items in CRM</div></div>'+
     '</div>'+
+    (cd?'<div class="card cat" style="--bc:var(--c4);margin-top:18px"><div class="card-top"><div class="card-title"><span class="ico">'+ic("i-eye")+'</span><div><h3>Today’s eye-training</h3><div class="val">'+esc(cd.title)+'</div></div></div><span class="btn btn--sm btn--primary" data-go="creative-director/'+cd.id+'">Begin '+ic("i-arrow")+'</span></div></div>':'')+
 
-    '<div class="card" style="margin-top:20px">'+
+    '<div class="card" style="margin-top:18px">'+
       '<div class="card-top"><div class="card-title"><span class="ico">'+ic("i-sun")+'</span><div><h3>Today’s focus</h3><div class="val">'+doneCount+' / '+rows.length+' done · ~'+est+' min planned</div></div></div></div>'+
       '<div class="progbar" style="margin-top:14px"><i style="width:'+pct+'%"></i></div>'+
       focus+
     '</div>'+
 
-    '<div class="note note--you" style="margin-top:4px">'+ic("i-bulb")+'<span><b>How to use Today.</b> Set the six fields each morning, then tick them off as you go. Everything else in the OS is a library you reach for <i>in service of today’s work</i> — not a feed to scroll.</span></div>';
+    '<div class="card" style="margin-top:18px"><div class="card-title"><span class="ico">'+ic("i-graph")+'</span><div><h3>Momentum &amp; milestones</h3><div class="val">where you are on the bigger journey</div></div></div>'+
+      '<div class="minigrid" style="--m:2;margin-top:8px">'+
+        '<div class="cell"><div class="t">'+ic("i-activity")+' Skills moving</div><div class="v">'+skillsAdv+' <small>/ '+(NS.skills||[]).length+'</small></div></div>'+
+        '<div class="cell"><div class="t">'+ic("i-camera")+' Portfolio</div><div class="v">'+port.length+' <small>pieces</small></div></div>'+
+        '<div class="cell"><div class="t">'+ic("i-users")+' Pipeline</div><div class="v">'+pipe.lead+'L · '+pipe.prospect+'P · '+pipe.client+'C</div></div>'+
+        '<div class="cell lever"><div class="t">'+ic("i-cash")+' Next milestone</div><div class="v">₹'+(im.next/1000)+'k</div></div>'+
+      '</div>'+
+      '<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink-faint);font-family:\'JetBrains Mono\',monospace"><span>₹'+im.total.toLocaleString("en-IN")+' earned</span><span>'+revPct+'% to ₹'+(im.next/1000)+'k</span></div><div class="progbar" style="margin-top:6px"><i style="width:'+revPct+'%"></i></div></div>'+
+    '</div>'+
+    '<div class="note note--you" style="margin-top:4px">'+ic("i-bulb")+'<span><b>How to use Today.</b> Set your focus each morning, tick it off as you go, do today’s eye-training, then close it. Everything else in the OS is a library you reach for <i>in service of today’s work</i> — not a feed to scroll.</span></div>';
   };
   VIEWS.today.after = function(){
     // input edits

@@ -1,30 +1,31 @@
-/* North Stories OS — service worker
-   Cache-first for the app shell; network-first for everything else.
-   Bump CACHE when shipping a new unit so clients pick up changes. */
-var CACHE = "nsos-v1.5";
+/* North Stories OS — service worker (v2 · NETWORK-FIRST)
+   Network-first so new deploys appear immediately; cache is only an
+   offline fallback. Navigations fall back to the cached app shell. */
+var CACHE = "nsos-v2.0";
 var SHELL = [
   "./", "./index.html", "./app.js", "./data.core.js", "./data.bibles.js",
   "./data.skills.js", "./data.curriculum.js", "./data.cd.js", "./manifest.webmanifest"
 ];
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function(){ return self.skipWaiting(); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener("activate", function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
     return Promise.all(keys.map(function (k) { if (k !== CACHE) return caches.delete(k); }));
-  }).then(function(){ return self.clients.claim(); }));
+  }).then(function () { return self.clients.claim(); }));
 });
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then(function (hit) {
-      var net = fetch(e.request).then(function (res) {
-        if (res && res.status === 200 && res.type === "basic") {
-          var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
-        }
-        return res;
-      }).catch(function () { return hit; });
-      return hit || net;
+    fetch(e.request).then(function (res) {
+      if (res && res.status === 200 && (res.type === "basic" || res.type === "cors")) {
+        var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(e.request).then(function (hit) {
+        return hit || (e.request.mode === "navigate" ? caches.match("./index.html") : undefined);
+      });
     })
   );
 });
