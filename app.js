@@ -117,6 +117,7 @@
     (NS.brands||[]).forEach(function(x){ out.push({title:x.name,sub:"Brand",kind:"brand",go:"brands/"+x.id,icon:"i-star"}); });
     (NS.locations||[]).forEach(function(x){ out.push({title:x.name,sub:"Location",kind:"location",go:"locations/"+x.id,icon:"i-map"}); });
     (NS.sops||[]).forEach(function(x){ out.push({title:x.title,sub:"SOP",kind:"sop",go:"sops/"+x.id,icon:"i-list"}); });
+    (NS.cdDrills||[]).forEach(function(d){ out.push({title:d.title,sub:"Creative Director",kind:"drill",go:"creative-director/"+d.id,icon:"i-eye"}); });
     (store.get("brain",[])||[]).forEach(function(x){ out.push({title:x.title||"(untitled)",sub:"Creative Brain",kind:"journal",go:"brain",icon:"i-bulb"}); });
     return out;
   }
@@ -468,6 +469,44 @@
     return html;
   };
 
+  /* ---- CREATIVE DIRECTOR (eye-training) ---- */
+  function cdLog(){ return store.get("cdlog",[])||[]; }
+  function cdDrillById(id){ return (NS.cdDrills||[]).find(function(d){return d.id===id;}); }
+  function cdTypeById(id){ return (NS.cdTypes||[]).find(function(t){return t.id===id;}); }
+  function cdTodayDrill(){ var d=NS.cdDrills||[]; if(!d.length) return null; return d[Math.floor(Date.now()/86400000)%d.length]; }
+  function cdDrillCard(d){ var t=cdTypeById(d.type)||{accent:'var(--primary)',label:d.type,icon:'i-eye'};
+    return '<div class="tile" data-go="creative-director/'+d.id+'" style="--dc:'+t.accent+'"><div class="tn">'+ic(t.icon)+' '+esc(t.label.toUpperCase())+'</div><div class="tt">'+esc(d.title)+'</div><div class="td">'+esc(d.prompt.slice(0,92))+'…</div><div class="go">Begin '+ic("i-arrow")+'</div></div>'; }
+  function cdDrillPage(d){
+    var t=cdTypeById(d.type)||{accent:'var(--primary)',label:d.type,icon:'i-eye'};
+    var mine=cdLog().filter(function(e){return e.drillId===d.id;});
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="creative-director">Creative Director</a>'+ic("i-chevron")+'<span>'+esc(d.title)+'</span></div>'+
+      '<div class="phead"><div><div class="eyebrow">'+esc(t.label)+'</div><h1 class="ptitle" style="margin-top:10px">'+esc(d.title)+'</h1></div></div>'+
+      '<div class="card cat" style="--bc:'+t.accent+'"><div class="card-title"><span class="ico">'+ic(t.icon)+'</span><div><h3>The challenge</h3></div></div><p class="lead" style="color:var(--ink);font-size:1rem">'+md(d.prompt)+'</p></div>'+
+      listCard("What to look for","i-eye",d.lookFor,false);
+    if(d.research) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-search")+'</span><div><h3>Reference</h3></div></div><div style="margin-top:10px"><a class="inspo" href="'+esc(researchURL(d.research.platform,d.research.query))+'" target="_blank" rel="noopener">'+ic("i-ext")+esc(d.research.platform)+': '+esc(d.research.query)+'</a></div></div>';
+    var cc="";
+    if(d.bibles&&d.bibles.length) cc+='<div style="margin-bottom:12px"><div class="bl-h">Study in the Bibles</div>'+d.bibles.map(function(id){var b=bibleById(id);return '<span class="chiplink" data-go="bibles/'+id+'">'+ic("i-layers")+esc(b?b.title:id)+'</span>';}).join("")+'</div>';
+    if(d.skills&&d.skills.length) cc+='<div><div class="bl-h">Trains the skills</div>'+d.skills.map(function(id){var s=skillById(id);return '<span class="chiplink" data-go="skills/'+id+'">'+ic("i-activity")+esc(s?s.name:id)+'</span>';}).join("")+'</div>';
+    if(cc) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-graph")+'</span><div><h3>Connections</h3></div></div><div style="margin-top:12px">'+cc+'</div></div>';
+    h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-edit")+'</span><div><h3>Your analysis</h3><div class="val">write what you noticed</div></div></div><div class="field" style="margin-top:12px"><textarea class="input" id="cdnotes" placeholder="What did you see? What would you change? What will you steal?"></textarea></div><div class="row"><span class="btn btn--primary" data-cdsave="'+d.id+'">'+ic("i-check")+' Save observation</span></div></div>';
+    if(mine.length) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-book")+'</span><div><h3>Your past observations</h3><div class="val">'+mine.length+' logged</div></div></div>'+mine.slice().reverse().map(function(e){return '<div style="padding:12px 0;border-top:1px solid var(--line)"><div style="font-family:\'JetBrains Mono\',monospace;font-size:.64rem;color:var(--ink-faint);display:flex;justify-content:space-between"><span>'+esc(e.date)+'</span><span class="chiplink" data-cddel="'+e.id+'" style="padding:1px 8px">'+ic("i-trash")+'delete</span></div><div style="margin-top:6px;color:var(--ink-soft);font-size:.93rem;line-height:1.6">'+md(e.notes)+'</div></div>';}).join("")+'</div>';
+    return h;
+  }
+  VIEWS["creative-director"] = function(r){
+    if(r.param){ var d=cdDrillById(r.param); return d?cdDrillPage(d):VIEWS._placeholder(r); }
+    var today=cdTodayDrill(), log=cdLog();
+    var html=head("Creative Director","Train the eye before the hand. One real observation a day — out in the world, not on a screen — compounds into taste no tutorial can teach.","Creative Director");
+    html+='<div class="stats" style="--n:2;margin-top:18px"><div class="stat"><div class="big">'+log.length+'</div><div class="lbl">Observations logged</div><div class="sub">Every entry sharpens your judgment</div></div>'+
+      '<div class="stat" style="--cat:var(--c4)"><div class="big" style="font-size:1.35rem;margin-top:10px">'+esc(today?today.title:"—")+'</div><div class="lbl">Today\'s challenge</div><div class="sub">Rotates daily</div></div></div>';
+    if(today){ var tt=cdTypeById(today.type)||{accent:'var(--primary)',icon:'i-eye',label:today.type};
+      html+='<div class="card cat" style="--bc:'+tt.accent+';margin-top:18px"><div class="card-top"><div class="card-title"><span class="ico">'+ic(tt.icon)+'</span><div><h3>Today\'s eye-training</h3><div class="val">'+esc(tt.label)+'</div></div></div></div><p class="lead" style="color:var(--ink)">'+md(today.prompt)+'</p><div class="row" style="margin-top:14px"><span class="btn btn--primary" data-go="creative-director/'+today.id+'">'+ic("i-eye")+' Begin today’s challenge</span></div></div>'; }
+    (NS.cdTypes||[]).forEach(function(t){
+      var items=(NS.cdDrills||[]).filter(function(d){return d.type===t.id;}); if(!items.length) return;
+      html+='<div class="sec-head" style="margin-top:28px"><p class="eyebrow">'+esc(t.label)+'</p><h2 style="font-size:1.3rem">'+esc(t.label)+'</h2><p>'+esc(t.blurb)+'</p></div><div class="cardgrid">'+items.map(function(d){return cdDrillCard(d);}).join("")+'</div>';
+    });
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -481,6 +520,8 @@
       render(); return; }
     var dv=e.target.closest("[data-deliv]"); if(dv){ var pp=dv.getAttribute("data-deliv").split("|"); var pd=store.get("projDeliv",{}); pd[pp[0]]=pd[pp[0]]||{}; pd[pp[0]][pp[1]]=!pd[pp[0]][pp[1]]; store.set("projDeliv",pd); render(); return; }
     var cpl=e.target.closest("[data-complete]"); if(cpl){ var pid=cpl.getAttribute("data-complete"); var pr=projectById(pid); if(pr&&pr.skills){ pr.skills.forEach(function(s){ if(s.toStage) setSkillStage(s.skillId,s.toStage); }); } var dn=store.get("projDone",{}); dn[pid]=todayKey(); store.set("projDone",dn); render(); return; }
+    var cs=e.target.closest("[data-cdsave]"); if(cs){ var ta=document.getElementById("cdnotes"); var v=ta?ta.value.trim():""; if(v){ var did=cs.getAttribute("data-cdsave"); var dd=cdDrillById(did); var lg=cdLog(); lg.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,7),date:todayKey(),drillId:did,type:dd?dd.type:"",title:dd?dd.title:"",notes:v}); store.set("cdlog",lg); if(stageIndex(skillStage("creative-direction"))<1) setSkillStage("creative-direction","Introduced"); } render(); return; }
+    var cdd=e.target.closest("[data-cddel]"); if(cdd){ var did2=cdd.getAttribute("data-cddel"); store.set("cdlog",cdLog().filter(function(x){return x.id!==did2;})); render(); return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
