@@ -40,7 +40,38 @@ NS.bibles = [
       { id:"export-recipe", title:"Export master recipe — Instagram Reels (Resolve Deliver)",
         tags:["export","deliver","instagram","h264"], links:["bible:davinci","bible:editing"],
         body:"One render preset for every reel. Build it once in Resolve's **Deliver** page and reuse it forever; only revisit if Instagram changes its specs.\n\n• Format: MP4\n• Codec: H.264 (Native)\n• Resolution: 1080 × 1920 (vertical, match timeline)\n• Frame rate: match timeline (24)\n• Rate control: CBR\n• Bit rate: ~20,000 Kb/s (target 20–25 Mbps)\n• Network optimisation: On\n• Audio: AAC, 320 kbps, 48 kHz, Stereo\n\n**The hard rule on export.** Never let highlights clip — check the scopes before you render. A blown-out window or sky is the fastest way to make a paying property look cheap. To beat Instagram's compression blur: export at the exact size, high bitrate, and never blow the highlights.",
-        images:[], references:[], related:["permanent-setup","per-shoot-dials"] }
+        images:[], references:[], related:["permanent-setup","per-shoot-dials"] },
+
+      /* Field-manual format demonstration entry (BibleEntry schema v1.2) */
+      { id:"exposure-histogram", title:"Exposure & the histogram",
+        summary:"How to set exposure by eye on the Blackmagic app — protect the highlights first, lift the shadows in the grade.",
+        tags:["exposure","histogram","highlights","iso","nd"],
+        links:["bible:lighting","bible:colour"],
+        sections:{
+          definition:"Exposure is how much light reaches the sensor for a given shot. On your locked rig (shutter 1/50, aperture f1.6) the only exposure controls are **ISO** and the **ND filter**. The histogram is the graph of how many pixels fall at each brightness — pure black on the left, pure white on the right.",
+          why:"Get exposure wrong and no grade can fully save it. Crushed shadows lose texture; clipped highlights lose detail forever. For paying hospitality work, a blown-out window or sky instantly makes an expensive property look cheap — the fastest way to lose a premium client's trust.",
+          firstPrinciples:"Highlights clip hard and unrecoverably; shadows degrade gently and lift well. So when in doubt, **expose for the highlights** and let the shadows sit lower — you can always raise them in Resolve. Rec.709 has limited latitude, so you protect the top end deliberately rather than hoping.",
+          standards:"A professional reads the histogram on every setup, not every shot. The right edge should approach but not pile against the wall (no clipping). Skin and key subjects sit in the upper-middle. Focus Assist (red) and the histogram are checked before you hit record — never fixed in the edit.",
+          mistakes:"Beginners chase a 'bright' image and clip the windows. They ride ISO up in dark rooms and bury the shot in noise instead of adding light or lowering the ND. They judge exposure on a sunny phone screen instead of the histogram. They expose for the shadows and lose the sky.",
+          business:"Consistent, highlight-safe exposure lets you grade a whole shoot to one look quickly — which protects your effective hourly rate and lets you promise a recognisable house style. It also means reshoots (expensive, relationship-damaging) almost never happen.",
+          hospitality:"Hotel rooms and cafés are high-dynamic-range nightmares: bright windows, dim interiors. Expose to hold the window view (the 'dream' the guest is buying), then add a little light or accept moodier shadows inside. For food, protect the specular highlights on sauces and glassware — that sheen is the appetite signal.",
+          implementation:"1) Frame and lock focus (red peaking). 2) Glance at the histogram. 3) If the right edge clips, add ND or lower ISO until it just clears the wall. 4) If the image is muddy and the highlights have room, raise ISO modestly. 5) Re-check after any lighting or framing change. 6) When a window is unavoidably brighter than the room, decide on purpose — hold it or blow it for a high-key look, never by accident."
+        },
+        exercises:[
+          "Shoot the same café corner three ways: exposed for the window, for the room, and a compromise. Compare which feels most premium.",
+          "In a dim interior, fix the exposure two ways — once by raising ISO, once by adding a single light. Note the noise difference."
+        ],
+        observationExercises:[
+          "For three days, study every hospitality reel you admire and decide where they let highlights fall. Are windows held or blown?",
+          "Walk into one café and one hotel lobby; find the highest-contrast view in each. Where would you place exposure?"
+        ],
+        reflection:[
+          "When did protecting the highlights cost you a brighter, friendlier image — and was it worth it?",
+          "Which is more 'you': holding every window, or embracing bright, high-key rooms?"
+        ],
+        cameraRefs:["per-shoot-dials","permanent-setup"],
+        crossLinks:["lighting","colour"],
+        references:[], related:["per-shoot-dials"] }
     ]},
 
   { id:"lighting", category:"craft", title:"Lighting Bible", icon:"i-sun", accent:"var(--c1)",

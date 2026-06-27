@@ -288,23 +288,37 @@
       '<div class="phead"><div><h1 class="ptitle">'+esc(b.title)+'</h1><p class="psub">'+esc(b.blurb)+'</p></div></div>'+tagRow(b.tags);
     if(entries.length){
       h+='<div class="cardgrid" style="margin-top:20px">'+entries.map(function(e){
-        return '<div class="tile" data-go="bibles/'+b.id+'/'+e.id+'" style="--dc:'+(b.accent||'var(--primary)')+'"><div class="tn">ENTRY '+ic("i-arrow")+'</div><div class="tt">'+esc(e.title)+'</div><div class="td">'+esc(plain(e.body).slice(0,92))+'…</div><div class="go">Read '+ic("i-arrow")+'</div></div>';
+        return '<div class="tile" data-go="bibles/'+b.id+'/'+e.id+'" style="--dc:'+(b.accent||'var(--primary)')+'"><div class="tn">ENTRY '+ic("i-arrow")+'</div><div class="tt">'+esc(e.title)+'</div><div class="td">'+esc((e.summary||plain(e.body)||(e.sections&&plain(e.sections.definition))||"").slice(0,92))+'…</div><div class="go">Read '+ic("i-arrow")+'</div></div>';
       }).join("")+'</div>';
     } else {
       h+='<div class="empty" style="margin-top:20px">'+ic("i-layers")+'<p style="margin-top:12px;font-size:1rem;color:var(--ink-soft)"><b>No entries yet.</b></p><p style="max-width:46ch;margin:8px auto 0">This Bible fills up as projects are completed — each one contributes observations, workflows, mistakes and SOPs. Deep-dive entries also ship as their own authored units.</p></div>';
     }
     return h+renderBacklinks("bible:"+b.id);
   }
+  var BIBLE_SECTIONS=[["definition","Definition","i-info"],["why","Why it matters","i-flag"],["firstPrinciples","First principles","i-compass"],["standards","Professional standards","i-star"],["mistakes","Common beginner mistakes","i-warn"],["business","Business implications","i-cash"],["hospitality","Hospitality applications","i-building"],["implementation","Practical implementation","i-list"]];
+  function listCard(title,icon,items,ordered){ if(!items||!items.length) return "";
+    var inner=ordered?('<ol class="steps">'+items.map(function(x){return '<li><div>'+md(x)+'</div></li>';}).join("")+'</ol>'):('<ul class="list">'+items.map(function(x){return '<li>'+md(x)+'</li>';}).join("")+'</ul>');
+    return '<div class="card"><div class="card-title"><span class="ico">'+ic(icon)+'</span><div><h3>'+esc(title)+'</h3></div></div>'+inner+'</div>'; }
   function entryPage(b,e){
     var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="bibles">Bibles</a>'+ic("i-chevron")+'<a data-go="bibles/'+b.id+'">'+esc(b.title)+'</a>'+ic("i-chevron")+'<span>'+esc(e.title)+'</span></div>'+
-      '<div class="phead"><div><h1 class="ptitle">'+esc(e.title)+'</h1></div></div>'+
-      '<div class="card"><div class="lead" style="color:var(--ink);font-size:.98rem;line-height:1.7">'+md(e.body)+'</div></div>'+tagRow(e.tags);
-    if(e.references&&e.references.length){
-      h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-ext")+'</span><div><h3>References</h3></div></div><ul class="list">'+e.references.map(function(rf){return '<li><a href="'+esc(rf.url)+'" target="_blank" rel="noopener">'+esc(rf.label)+'</a></li>';}).join("")+'</ul></div>';
-    }
-    if(e.related&&e.related.length){
-      h+='<div class="backlinks"><div class="bl-h">Related in this Bible</div>'+e.related.map(function(rid){var re=(b.entries||[]).find(function(x){return x.id===rid;}); return re?'<span class="chiplink" data-go="bibles/'+b.id+'/'+re.id+'">'+ic("i-layers")+esc(re.title)+'</span>':"";}).join("")+'</div>';
-    }
+      '<div class="phead"><div><h1 class="ptitle">'+esc(e.title)+'</h1>'+(e.summary?'<p class="psub">'+esc(e.summary)+'</p>':'')+'</div></div>'+tagRow(e.tags);
+    if(e.body){ h+='<div class="card"><div class="lead" style="color:var(--ink);font-size:.98rem;line-height:1.7">'+md(e.body)+'</div></div>'; }
+    if(e.sections){ BIBLE_SECTIONS.forEach(function(s){ var v=e.sections[s[0]]; if(!v) return;
+      h+='<div class="card cat" style="--bc:'+(b.accent||'var(--primary)')+'"><div class="card-title"><span class="ico">'+ic(s[2])+'</span><div><h3>'+esc(s[1])+'</h3></div></div><div class="lead" style="color:var(--ink-soft);font-size:.95rem;line-height:1.7;margin-top:8px">'+md(v)+'</div></div>'; }); }
+    h+=listCard("Practical exercises","i-target",e.exercises,true);
+    h+=listCard("Observation exercises","i-eye",e.observationExercises,false);
+    h+=listCard("Reflection questions","i-bulb",e.reflection,false);
+    var conn="";
+    function grp(label,items,builder){ if(!items||!items.length) return; conn+='<div style="margin-bottom:12px"><div class="bl-h">'+esc(label)+'</div>'+items.map(builder).join("")+'</div>'; }
+    grp("Cross-links",e.crossLinks,function(id){ var rb=bibleById(id); return '<span class="chiplink" data-go="bibles/'+id+'">'+ic("i-layers")+esc(rb?rb.title:id)+'</span>'; });
+    grp("Blackmagic Camera",e.cameraRefs,function(id){ var cb=bibleById("camera"),ce=cb&&(cb.entries||[]).find(function(x){return x.id===id;}); return '<span class="chiplink" data-go="bibles/camera/'+id+'">'+ic("i-camera")+esc(ce?ce.title:id)+'</span>'; });
+    grp("DaVinci Resolve",e.davinciRefs,function(id){ return '<span class="chiplink" data-go="bibles/davinci/'+id+'">'+ic("i-film")+esc(id)+'</span>'; });
+    grp("Related projects",e.relatedProjects,function(id){ return '<span class="chiplink" data-go="curriculum/'+id+'">'+ic("i-camera")+esc(id)+'</span>'; });
+    grp("Portfolio case studies",e.relatedPortfolio,function(id){ return '<span class="chiplink" data-go="portfolio">'+ic("i-star")+esc(id)+'</span>'; });
+    grp("Related SOPs",e.relatedSOPs,function(id){ return '<span class="chiplink" data-go="sops/'+id+'">'+ic("i-list")+esc(id)+'</span>'; });
+    if(conn) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-graph")+'</span><div><h3>Connections</h3></div></div><div style="margin-top:12px">'+conn+'</div></div>';
+    if(e.references&&e.references.length){ h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-ext")+'</span><div><h3>References</h3></div></div><ul class="list">'+e.references.map(function(rf){return '<li><a href="'+esc(rf.url)+'" target="_blank" rel="noopener">'+esc(rf.label)+'</a></li>';}).join("")+'</ul></div>'; }
+    if(e.related&&e.related.length){ h+='<div class="backlinks"><div class="bl-h">Related in this Bible</div>'+e.related.map(function(rid){var re=(b.entries||[]).find(function(x){return x.id===rid;}); return re?'<span class="chiplink" data-go="bibles/'+b.id+'/'+re.id+'">'+ic("i-layers")+esc(re.title)+'</span>':"";}).join("")+'</div>'; }
     return h+renderBacklinks("bible:"+b.id+"/"+e.id);
   }
   VIEWS.bibles = function(r){
