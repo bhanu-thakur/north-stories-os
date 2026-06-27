@@ -270,6 +270,57 @@
         '<div class="go">Open '+ic("i-arrow")+'</div></div>'; }).join("")+'</div>';
   };
 
+  /* ---- shared content helpers ---- */
+  function plain(t){ return String(t||"").replace(/[*`#>]/g,"").replace(/\n+/g," ").trim(); }
+  function tagRow(tags){ if(!tags||!tags.length) return ""; return '<div class="row" style="margin-top:14px">'+tags.map(function(t){return '<span class="tag">#'+esc(t)+'</span>';}).join("")+'</div>'; }
+  function routeForType(type){ return {bible:"bibles",lesson:"curriculum",brand:"brands",location:"locations",sop:"sops",agency:"agency",northstar:"northstar"}[type]||type; }
+  function renderBacklinks(key){
+    var bl=NS.backlinks(key); if(!bl.length) return "";
+    return '<div class="backlinks"><div class="bl-h">Referenced by</div>'+bl.map(function(n){
+      return '<span class="chiplink" data-go="'+routeForType(n.type)+'/'+n.id+'">'+ic("i-graph")+esc(n.title)+'</span>'; }).join("")+'</div>';
+  }
+
+  /* ---- KNOWLEDGE BIBLES ---- */
+  function bibleById(id){ return (NS.bibles||[]).find(function(b){return b.id===id;}); }
+  function biblePage(b){
+    var entries=b.entries||[];
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="bibles">Bibles</a>'+ic("i-chevron")+'<span>'+esc(b.title)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(b.title)+'</h1><p class="psub">'+esc(b.blurb)+'</p></div></div>'+tagRow(b.tags);
+    if(entries.length){
+      h+='<div class="cardgrid" style="margin-top:20px">'+entries.map(function(e){
+        return '<div class="tile" data-go="bibles/'+b.id+'/'+e.id+'" style="--dc:'+(b.accent||'var(--primary)')+'"><div class="tn">ENTRY '+ic("i-arrow")+'</div><div class="tt">'+esc(e.title)+'</div><div class="td">'+esc(plain(e.body).slice(0,92))+'…</div><div class="go">Read '+ic("i-arrow")+'</div></div>';
+      }).join("")+'</div>';
+    } else {
+      h+='<div class="empty" style="margin-top:20px">'+ic("i-layers")+'<p style="margin-top:12px;font-size:1rem;color:var(--ink-soft)"><b>No entries yet.</b></p><p style="max-width:46ch;margin:8px auto 0">This Bible fills up as projects are completed — each one contributes observations, workflows, mistakes and SOPs. Deep-dive entries also ship as their own authored units.</p></div>';
+    }
+    return h+renderBacklinks("bible:"+b.id);
+  }
+  function entryPage(b,e){
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="bibles">Bibles</a>'+ic("i-chevron")+'<a data-go="bibles/'+b.id+'">'+esc(b.title)+'</a>'+ic("i-chevron")+'<span>'+esc(e.title)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(e.title)+'</h1></div></div>'+
+      '<div class="card"><div class="lead" style="color:var(--ink);font-size:.98rem;line-height:1.7">'+md(e.body)+'</div></div>'+tagRow(e.tags);
+    if(e.references&&e.references.length){
+      h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-ext")+'</span><div><h3>References</h3></div></div><ul class="list">'+e.references.map(function(rf){return '<li><a href="'+esc(rf.url)+'" target="_blank" rel="noopener">'+esc(rf.label)+'</a></li>';}).join("")+'</ul></div>';
+    }
+    if(e.related&&e.related.length){
+      h+='<div class="backlinks"><div class="bl-h">Related in this Bible</div>'+e.related.map(function(rid){var re=(b.entries||[]).find(function(x){return x.id===rid;}); return re?'<span class="chiplink" data-go="bibles/'+b.id+'/'+re.id+'">'+ic("i-layers")+esc(re.title)+'</span>':"";}).join("")+'</div>';
+    }
+    return h+renderBacklinks("bible:"+b.id+"/"+e.id);
+  }
+  VIEWS.bibles = function(r){
+    if(r.param){ var b=bibleById(r.param); if(!b) return VIEWS._placeholder(r);
+      if(r.sub){ var e=(b.entries||[]).find(function(x){return x.id===r.sub;}); return e?entryPage(b,e):VIEWS._placeholder(r); }
+      return biblePage(b); }
+    var html=head("Knowledge Bibles","The permanent source of truth. Projects update these; they never duplicate them — over time they become your agency's operating manual.","Knowledge Bibles");
+    (NS.bibleCategories||[]).forEach(function(cat){
+      var items=(NS.bibles||[]).filter(function(b){return b.category===cat.id;}); if(!items.length) return;
+      html+='<div class="sec-head" style="margin-top:30px"><p class="eyebrow">'+esc(cat.label)+'</p><h2 style="font-size:1.4rem">'+esc(cat.label)+' Bibles</h2><p>'+esc(cat.blurb)+'</p></div>'+
+        '<div class="cardgrid">'+items.map(function(b){ var n=(b.entries||[]).length;
+          return '<div class="tile" data-go="bibles/'+b.id+'" style="--dc:'+(b.accent||'var(--primary)')+'"><div class="tn">'+ic(b.icon)+' '+(n?n+' ENTRIES':'NEW')+'</div><div class="tt">'+esc(b.title)+'</div><div class="td">'+esc(b.blurb)+'</div><div class="go">Open '+ic("i-arrow")+'</div></div>'; }).join("")+'</div>';
+    });
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
