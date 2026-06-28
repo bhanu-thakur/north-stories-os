@@ -571,6 +571,69 @@
     return html;
   };
 
+  /* ---- BUSINESS DASHBOARD ---- */
+  function bizMetrics(){
+    var inc=store.get("income",[])||[]; var crm=crmAll();
+    var revenue=inc.reduce(function(a,b){return a+(+b.amount||0);},0);
+    var now=new Date(); var ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+    var monthRev=inc.filter(function(x){return (x.date||"").slice(0,7)===ym;}).reduce(function(a,b){return a+(+b.amount||0);},0);
+    var retainer=crm.filter(function(c){return c.stage==="client";}).reduce(function(a,b){return a+(+b.retainer||0);},0);
+    var hours=inc.reduce(function(a,b){return a+(+b.hours||0);},0);
+    var projInc=inc.filter(function(x){return x.type!=="retainer";});
+    var avgProj=projInc.length?Math.round(revenue/projInc.length):0;
+    var ehr=hours?Math.round(revenue/hours):0;
+    var clients=crm.filter(function(c){return c.stage==="client"||c.stage==="past";}).length;
+    var conv=crm.length?Math.round(clients/crm.length*100):0;
+    var ltv=clients?Math.round(revenue/clients):0;
+    var done=Object.keys(store.get("projDone",{})).length;
+    var port=(store.get("portfolio",[])||[]).length;
+    return {revenue:revenue,monthRev:monthRev,retainer:retainer,hours:hours,avgProj:avgProj,ehr:ehr,clients:clients,conv:conv,ltv:ltv,done:done,port:port,inc:inc};
+  }
+  VIEWS.business = function(){
+    var m=bizMetrics(), im=incomeMilestone(), revPct=im.next?Math.min(100,Math.round(im.total/im.next*100)):100;
+    var html=head("Business Dashboard","The numbers that tell the truth — computed live from your CRM and logged income. Sell outcomes, raise rates, watch the effective hourly rate.","Business Dashboard");
+    html+='<div class="stats" style="--n:4;margin-top:18px">'+
+      '<div class="stat"><div class="big" style="font-size:1.9rem">₹'+m.revenue.toLocaleString("en-IN")+'</div><div class="lbl">Total revenue</div><div class="sub">all logged income</div></div>'+
+      '<div class="stat" style="--cat:var(--c3)"><div class="big" style="font-size:1.9rem">₹'+m.monthRev.toLocaleString("en-IN")+'</div><div class="lbl">This month</div></div>'+
+      '<div class="stat" style="--cat:var(--c2)"><div class="big" style="font-size:1.9rem">₹'+m.retainer.toLocaleString("en-IN")+'</div><div class="lbl">Retainers / mo</div><div class="sub">recurring</div></div>'+
+      '<div class="stat" style="--cat:var(--c4)"><div class="big">'+m.clients+'</div><div class="lbl">Clients</div></div></div>';
+    html+='<div class="card" style="margin-top:18px"><div class="card-title"><span class="ico">'+ic("i-target")+'</span><div><h3>Revenue milestone</h3><div class="val">next: ₹'+(im.next/1000)+'k</div></div></div><div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--ink-faint);font-family:\'JetBrains Mono\',monospace"><span>₹'+im.total.toLocaleString("en-IN")+'</span><span>'+revPct+'%</span></div><div class="progbar" style="margin-top:6px"><i style="width:'+revPct+'%"></i></div></div></div>';
+    html+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-activity")+'</span><div><h3>Key metrics</h3><div class="val">computed live</div></div></div><div class="minigrid" style="--m:3;margin-top:6px">'+
+      '<div class="cell"><div class="t">Conversion</div><div class="v">'+m.conv+'%</div></div>'+
+      '<div class="cell"><div class="t">Avg project value</div><div class="v">₹'+m.avgProj.toLocaleString("en-IN")+'</div></div>'+
+      '<div class="cell lever"><div class="t">Effective hourly rate</div><div class="v">₹'+m.ehr.toLocaleString("en-IN")+' <small>/hr</small></div></div>'+
+      '<div class="cell"><div class="t">Client LTV</div><div class="v">₹'+m.ltv.toLocaleString("en-IN")+'</div></div>'+
+      '<div class="cell"><div class="t">Projects shipped</div><div class="v">'+m.done+'</div></div>'+
+      '<div class="cell"><div class="t">Hours logged</div><div class="v">'+m.hours+'</div></div></div>'+
+      '<div class="note note--you">'+ic("i-bulb")+'<span>Effective hourly rate is the number that tells the truth about a client. Log hours with each payment to keep it honest.</span></div></div>';
+    html+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-plus")+'</span><div><h3>Log income</h3></div></div>'+
+      '<div class="grid g2">'+field("Amount (₹)","inc-amt","")+selectField("Type","inc-type",[["project","Project"],["retainer","Retainer"]],"project")+'</div>'+
+      '<div class="grid g2">'+field("Source / client","inc-src","")+field("Hours worked","inc-hours","")+'</div>'+
+      '<div class="row"><span class="btn btn--primary" data-incadd="1">'+ic("i-check")+' Add income</span></div></div>';
+    if(m.inc.length) html+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-cash")+'</span><div><h3>Recent income</h3></div></div><table class="table"><tr><th>Date</th><th>Source</th><th>Type</th><th>₹</th><th></th></tr>'+m.inc.slice().reverse().map(function(x){return '<tr><td>'+esc(x.date)+'</td><td>'+esc(x.source||"")+'</td><td>'+esc(x.type||"")+'</td><td>₹'+(+x.amount||0).toLocaleString("en-IN")+'</td><td><span class="chiplink" data-incdel="'+x.id+'">'+ic("i-trash")+'</span></td></tr>';}).join("")+'</table></div>';
+    return html;
+  };
+
+  /* ---- CREATIVE BRAIN ---- */
+  var BRAIN_TYPES=[["idea","Idea","i-bulb"],["observation","Observation","i-eye"],["business","Business insight","i-bag"],["light","Light","i-sun"],["texture","Texture","i-layers"],["colour","Colour","i-palette"],["audio","Audio","i-mic"],["client","Client idea","i-users"],["win","Win","i-star"],["mistake","Mistake","i-warn"]];
+  function brainAll(){ return store.get("brain",[])||[]; }
+  function brainTypeOf(id){ var f=BRAIN_TYPES.find(function(x){return x[0]===id;}); return f||[id,id,"i-bulb"]; }
+  VIEWS.brain = function(r){
+    var all=brainAll(), filter=r.param||"", shown=filter?all.filter(function(e){return e.type===filter;}):all;
+    var html=head("Creative Brain","Ideas, observations, light, textures, wins and mistakes — the raw material your work is made from. Capture fast, find it later.","Creative Brain");
+    html+='<div class="card" style="margin-top:6px"><div class="card-title"><span class="ico">'+ic("i-plus")+'</span><div><h3>Capture</h3></div></div>'+
+      '<div class="grid g2">'+selectField("Type","brain-type",BRAIN_TYPES.map(function(t){return [t[0],t[1]];}),"idea")+field("Title (optional)","brain-title","")+'</div>'+
+      areaField("What’s on your mind?","brain-body","")+
+      field("Tags (comma-separated)","brain-tags","")+
+      '<div class="row"><span class="btn btn--primary" data-brainadd="1">'+ic("i-check")+' Save to brain</span></div></div>';
+    html+='<div class="row" style="margin:4px 0 14px"><span class="tag" data-go="brain">All ('+all.length+')</span>'+BRAIN_TYPES.map(function(t){var n=all.filter(function(e){return e.type===t[0];}).length; return n?'<span class="tag" data-go="brain/'+t[0]+'">'+esc(t[1])+' ('+n+')</span>':'';}).join("")+'</div>';
+    if(!shown.length){ html+='<div class="empty">'+ic("i-bulb")+'<p style="margin-top:12px">'+(all.length?'Nothing in this filter.':'Your brain is empty. Capture your first thought above.')+'</p></div>'; return html; }
+    html+=shown.slice().reverse().map(function(e){var t=brainTypeOf(e.type);
+      return '<div class="card cat" style="--bc:var(--c1);padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="pill pill--brand">'+esc(t[1])+'</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:.62rem;color:var(--ink-faint)">'+esc(e.date)+' <span class="chiplink" data-braindel="'+e.id+'" style="padding:1px 7px">'+ic("i-trash")+'</span></span></div>'+(e.title?'<h3 style="font-size:1.1rem;margin-top:8px">'+esc(e.title)+'</h3>':'')+'<div class="lead" style="color:var(--ink-soft);margin-top:'+(e.title?'4px':'10px')+'">'+md(e.body)+'</div>'+((e.tags&&e.tags.length)?'<div class="row" style="margin-top:10px">'+e.tags.map(function(tg){return '<span class="tag">#'+esc(tg)+'</span>';}).join("")+'</div>':'')+'</div>';
+    }).join("");
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -593,6 +656,10 @@
     var cfa=e.target.closest("[data-crmfuadd]"); if(cfa){ var tv=fval("crm-fu"); if(tv){ var a4=crmAll(); var c4=a4.find(function(x){return x.id===cfa.getAttribute("data-crmfuadd");}); if(c4){ (c4.followUps=c4.followUps||[]).push({id:uid(),text:tv,date:todayKey(),done:false}); store.set("crm",a4); } } render(); return; }
     var cqa=e.target.closest("[data-crmqadd]"); if(cqa){ var ql=fval("crm-q-label"), qa=fval("crm-q-amt"); if(ql){ var a5=crmAll(); var c5=a5.find(function(x){return x.id===cqa.getAttribute("data-crmqadd");}); if(c5){ (c5.quotes=c5.quotes||[]).push({id:uid(),label:ql,amount:qa,status:"sent"}); store.set("crm",a5); } } render(); return; }
     var cqd=e.target.closest("[data-crmqdel]"); if(cqd){ var pr3=cqd.getAttribute("data-crmqdel").split("|"); var a6=crmAll(); var c6=a6.find(function(x){return x.id===pr3[0];}); if(c6){ c6.quotes=(c6.quotes||[]).filter(function(y){return y.id!==pr3[1];}); store.set("crm",a6); } render(); return; }
+    if(e.target.closest("[data-incadd]")){ var am=fval("inc-amt"); if(am){ var inc=store.get("income",[])||[]; inc.push({id:uid(),date:todayKey(),amount:+am||0,source:fval("inc-src"),type:fval("inc-type"),hours:+fval("inc-hours")||0}); store.set("income",inc); } render(); return; }
+    var icd=e.target.closest("[data-incdel]"); if(icd){ store.set("income",(store.get("income",[])||[]).filter(function(x){return x.id!==icd.getAttribute("data-incdel");})); render(); return; }
+    if(e.target.closest("[data-brainadd]")){ var bb=fval("brain-body"); if(bb){ var br=brainAll(); br.push({id:uid(),date:todayKey(),type:fval("brain-type"),title:fval("brain-title"),body:bb,tags:fval("brain-tags").split(",").map(function(s){return s.trim();}).filter(Boolean)}); store.set("brain",br); } render(); return; }
+    var brd=e.target.closest("[data-braindel]"); if(brd){ store.set("brain",brainAll().filter(function(x){return x.id!==brd.getAttribute("data-braindel");})); render(); return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
