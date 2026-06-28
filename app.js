@@ -118,6 +118,7 @@
     (NS.locations||[]).forEach(function(x){ out.push({title:x.name,sub:"Location",kind:"location",go:"locations/"+x.id,icon:"i-map"}); });
     (NS.sops||[]).forEach(function(x){ out.push({title:x.title,sub:"SOP",kind:"sop",go:"sops/"+x.id,icon:"i-list"}); });
     (NS.cdDrills||[]).forEach(function(d){ out.push({title:d.title,sub:"Creative Director",kind:"drill",go:"creative-director/"+d.id,icon:"i-eye"}); });
+    (store.get("crm",[])||[]).forEach(function(c){ out.push({title:c.name,sub:"Business CRM",kind:"client",go:"crm/"+c.id,icon:"i-users"}); });
     (store.get("brain",[])||[]).forEach(function(x){ out.push({title:x.title||"(untitled)",sub:"Creative Brain",kind:"journal",go:"brain",icon:"i-bulb"}); });
     return out;
   }
@@ -522,6 +523,54 @@
     return html;
   };
 
+  /* ---- BUSINESS CRM ---- */
+  var CRM_STAGES=[["lead","Leads","var(--c6)"],["prospect","Prospects","var(--c3)"],["client","Clients","var(--c1)"],["past","Past clients","var(--ink-faint)"]];
+  function crmAll(){ return store.get("crm",[])||[]; }
+  function crmById(id){ return crmAll().find(function(c){return c.id===id;}); }
+  function fval(id){ var el=document.getElementById(id); return el?String(el.value).trim():""; }
+  function uid(){ return Date.now()+"-"+Math.random().toString(36).slice(2,7); }
+  function stageLabel(s){ var f=CRM_STAGES.find(function(x){return x[0]===s;}); return f?f[1]:s; }
+  function stageColor2(s){ var f=CRM_STAGES.find(function(x){return x[0]===s;}); return f?f[2]:'var(--primary)'; }
+  function field(label,id,v){ return '<div class="field"><label>'+esc(label)+'</label><input class="input" id="'+id+'" value="'+esc(v||"")+'"></div>'; }
+  function areaField(label,id,v){ return '<div class="field"><label>'+esc(label)+'</label><textarea class="input" id="'+id+'">'+esc(v||"")+'</textarea></div>'; }
+  function selectField(label,id,opts,sel){ return '<div class="field"><label>'+esc(label)+'</label><select class="input" id="'+id+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===sel?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'; }
+  function crmClientPage(c){
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="crm">Business CRM</a>'+ic("i-chevron")+'<span>'+esc(c.name)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(c.name)+'</h1><p class="psub">'+esc(c.businessType||"")+'</p></div><span class="mstage" style="background:'+stageColor2(c.stage)+'">'+esc(stageLabel(c.stage))+'</span></div>';
+    h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-edit")+'</span><div><h3>Details</h3></div></div>'+
+      field("Name","crm-name",c.name)+
+      selectField("Stage","crm-stage",CRM_STAGES.map(function(s){return [s[0],s[1]];}),c.stage)+
+      '<div class="grid g2">'+field("Business type","crm-type",c.businessType)+field("Source","crm-source",c.source)+'</div>'+
+      '<div class="grid g2">'+field("Contact","crm-contact",c.contact)+field("Retainer (₹/mo)","crm-retainer",c.retainer)+'</div>'+
+      field("Next action","crm-next",c.nextAction)+
+      areaField("Notes","crm-notes",c.notes)+
+      '<div class="row"><span class="btn btn--primary" data-crmsave="'+c.id+'">'+ic("i-check")+' Save</span><span class="btn" data-crmdel="'+c.id+'">'+ic("i-trash")+' Delete</span></div></div>';
+    h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-flag")+'</span><div><h3>Follow-ups</h3></div></div>'+
+      ((c.followUps&&c.followUps.length)?c.followUps.map(function(f){return '<div class="check'+(f.done?' on':'')+'" data-crmfu="'+c.id+'|'+f.id+'"><span class="box">'+ic("i-check")+'</span><span class="lab">'+esc(f.text)+(f.date?' · '+esc(f.date):'')+'</span></div>';}).join(""):'<p class="lead" style="color:var(--ink-faint)">No follow-ups yet.</p>')+
+      '<div class="row" style="margin-top:12px"><input class="input" id="crm-fu" placeholder="Add a follow-up…" style="flex:1;min-width:160px"><span class="btn" data-crmfuadd="'+c.id+'">'+ic("i-plus")+' Add</span></div></div>';
+    h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-cash")+'</span><div><h3>Quotes</h3></div></div>'+
+      ((c.quotes&&c.quotes.length)?'<table class="table"><tr><th>Item</th><th>₹</th><th></th></tr>'+c.quotes.map(function(q){return '<tr><td>'+esc(q.label)+'</td><td>₹'+(+q.amount||0).toLocaleString("en-IN")+'</td><td><span class="chiplink" data-crmqdel="'+c.id+'|'+q.id+'">'+ic("i-trash")+'</span></td></tr>';}).join("")+'</table>':'<p class="lead" style="color:var(--ink-faint)">No quotes yet.</p>')+
+      '<div class="row" style="margin-top:12px"><input class="input" id="crm-q-label" placeholder="Quote item" style="flex:2;min-width:140px"><input class="input" id="crm-q-amt" placeholder="₹" style="flex:1;min-width:80px"><span class="btn" data-crmqadd="'+c.id+'">'+ic("i-plus")+' Add</span></div></div>';
+    return h;
+  }
+  VIEWS.crm = function(r){
+    if(r.param){ var c=crmById(r.param); return c?crmClientPage(c):VIEWS._placeholder(r); }
+    var all=crmAll();
+    var html=head("Business CRM","Leads → prospects → clients → past. This is the money pipeline — the work the studio runs on.","Business CRM");
+    html+='<div class="stats" style="--n:4;margin-top:18px">'+CRM_STAGES.map(function(s){var n=all.filter(function(c){return c.stage===s[0];}).length; return '<div class="stat" style="--cat:'+s[2]+'"><div class="big">'+n+'</div><div class="lbl">'+esc(s[1])+'</div></div>';}).join("")+'</div>';
+    html+='<div class="card" style="margin-top:18px"><div class="card-title"><span class="ico">'+ic("i-plus")+'</span><div><h3>Add a lead</h3></div></div>'+
+      '<div class="grid g2">'+field("Name","crm-new-name","")+field("Business type","crm-new-type","")+'</div>'+
+      '<div class="grid g2">'+field("Source","crm-new-source","")+field("Contact","crm-new-contact","")+'</div>'+
+      field("Next action","crm-new-next","")+
+      '<div class="row"><span class="btn btn--primary" data-crmadd="1">'+ic("i-check")+' Add to pipeline</span></div></div>';
+    CRM_STAGES.forEach(function(s){
+      var items=all.filter(function(c){return c.stage===s[0];}); if(!items.length) return;
+      html+='<div class="sec-head" style="margin-top:24px"><p class="eyebrow">'+esc(s[1])+'</p></div><div class="cardgrid">'+items.map(function(c){return '<div class="tile" data-go="crm/'+c.id+'" style="--dc:'+s[2]+'"><div class="tn">'+esc((c.businessType||"client").toUpperCase())+'</div><div class="tt">'+esc(c.name)+'</div>'+(c.nextAction?'<div class="td">→ '+esc(c.nextAction)+'</div>':'')+'<div class="go">Open '+ic("i-arrow")+'</div></div>';}).join("")+'</div>';
+    });
+    if(!all.length) html+='<div class="empty">'+ic("i-users")+'<p style="margin-top:12px">No clients yet. Add your first lead above.</p></div>';
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -537,6 +586,13 @@
     var cpl=e.target.closest("[data-complete]"); if(cpl){ var pid=cpl.getAttribute("data-complete"); var pr=projectById(pid); if(pr&&pr.skills){ pr.skills.forEach(function(s){ if(s.toStage) setSkillStage(s.skillId,s.toStage); }); } var dn=store.get("projDone",{}); dn[pid]=todayKey(); store.set("projDone",dn); render(); return; }
     var cs=e.target.closest("[data-cdsave]"); if(cs){ var ta=document.getElementById("cdnotes"); var v=ta?ta.value.trim():""; if(v){ var did=cs.getAttribute("data-cdsave"); var dd=cdDrillById(did); var lg=cdLog(); lg.push({id:Date.now()+"-"+Math.random().toString(36).slice(2,7),date:todayKey(),drillId:did,type:dd?dd.type:"",title:dd?dd.title:"",notes:v}); store.set("cdlog",lg); if(stageIndex(skillStage("creative-direction"))<1) setSkillStage("creative-direction","Introduced"); } render(); return; }
     var cdd=e.target.closest("[data-cddel]"); if(cdd){ var did2=cdd.getAttribute("data-cddel"); store.set("cdlog",cdLog().filter(function(x){return x.id!==did2;})); render(); return; }
+    if(e.target.closest("[data-crmadd]")){ var nm=fval("crm-new-name"); if(nm){ var a=crmAll(); a.push({id:uid(),name:nm,stage:"lead",businessType:fval("crm-new-type"),source:fval("crm-new-source"),contact:fval("crm-new-contact"),nextAction:fval("crm-new-next"),notes:"",retainer:"",followUps:[],quotes:[],createdAt:todayKey()}); store.set("crm",a); } render(); return; }
+    var csv=e.target.closest("[data-crmsave]"); if(csv){ var a2=crmAll(); var c2=a2.find(function(x){return x.id===csv.getAttribute("data-crmsave");}); if(c2){ c2.name=fval("crm-name")||c2.name; c2.stage=fval("crm-stage"); c2.businessType=fval("crm-type"); c2.source=fval("crm-source"); c2.contact=fval("crm-contact"); c2.retainer=fval("crm-retainer"); c2.nextAction=fval("crm-next"); c2.notes=fval("crm-notes"); store.set("crm",a2); } render(); return; }
+    var cdl=e.target.closest("[data-crmdel]"); if(cdl){ store.set("crm",crmAll().filter(function(x){return x.id!==cdl.getAttribute("data-crmdel");})); go("crm"); return; }
+    var cfu=e.target.closest("[data-crmfu]"); if(cfu){ var pr2=cfu.getAttribute("data-crmfu").split("|"); var a3=crmAll(); var c3=a3.find(function(x){return x.id===pr2[0];}); if(c3){ var f=(c3.followUps||[]).find(function(y){return y.id===pr2[1];}); if(f){ f.done=!f.done; store.set("crm",a3); } } render(); return; }
+    var cfa=e.target.closest("[data-crmfuadd]"); if(cfa){ var tv=fval("crm-fu"); if(tv){ var a4=crmAll(); var c4=a4.find(function(x){return x.id===cfa.getAttribute("data-crmfuadd");}); if(c4){ (c4.followUps=c4.followUps||[]).push({id:uid(),text:tv,date:todayKey(),done:false}); store.set("crm",a4); } } render(); return; }
+    var cqa=e.target.closest("[data-crmqadd]"); if(cqa){ var ql=fval("crm-q-label"), qa=fval("crm-q-amt"); if(ql){ var a5=crmAll(); var c5=a5.find(function(x){return x.id===cqa.getAttribute("data-crmqadd");}); if(c5){ (c5.quotes=c5.quotes||[]).push({id:uid(),label:ql,amount:qa,status:"sent"}); store.set("crm",a5); } } render(); return; }
+    var cqd=e.target.closest("[data-crmqdel]"); if(cqd){ var pr3=cqd.getAttribute("data-crmqdel").split("|"); var a6=crmAll(); var c6=a6.find(function(x){return x.id===pr3[0];}); if(c6){ c6.quotes=(c6.quotes||[]).filter(function(y){return y.id!==pr3[1];}); store.set("crm",a6); } render(); return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
