@@ -760,6 +760,47 @@
     return html;
   };
 
+  /* ---- LOCATION LIBRARY ---- */
+  function scalarCard(title,icon,pairs){ var rows=pairs.filter(function(p){return p[1];}); if(!rows.length) return ""; return '<div class="card"><div class="card-title"><span class="ico">'+ic(icon)+'</span><div><h3>'+esc(title)+'</h3></div></div><ul class="list">'+rows.map(function(p){return '<li><b>'+esc(p[0])+'.</b> '+md(p[1])+'</li>';}).join("")+'</ul></div>'; }
+  function locById(id){ return (NS.locations||[]).find(function(l){return l.id===id;}); }
+  function locPage(l){
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="locations">Location Library</a>'+ic("i-chevron")+'<span>'+esc(l.name)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(l.name)+'</h1>'+(l.blurb?'<p class="psub">'+esc(l.blurb)+'</p>':'')+'</div>'+(l.region?'<span class="pill pill--brand">'+esc(l.region)+'</span>':'')+'</div>'+
+      '<div class="row" style="margin-top:4px"><a class="btn" href="'+esc(l.maps)+'" target="_blank" rel="noopener">'+ic("i-pin")+' Open in Maps</a>'+(l.gps?'<span class="tag">'+esc(l.gps)+'</span>':'')+'</div>';
+    h+=scalarCard("Light & weather","i-sun",[["Light",l.light],["Golden hour",l.goldenHour],["Sunrise",l.sunrise],["Fog",l.fog]]);
+    h+=scalarCard("On location","i-map",[["Architecture",l.architecture],["Roads",l.roads],["Parking",l.parking],["Permissions",l.permissions]]);
+    h+=listCard("Restaurants & cafés","i-coffee",l.restaurants,false);
+    h+=listCard("Hotels & stays","i-building",l.hotels,false);
+    h+=listCard("Luxury businesses","i-star",l.luxuryBiz,false);
+    h+=listCard("Future clients","i-users",l.futureClients,false);
+    h+=listCard("Shoot ideas","i-camera",l.shoots,false);
+    return h+renderBacklinks("location:"+l.id);
+  }
+  VIEWS.locations = function(r){
+    if(r.param){ var l=locById(r.param); return l?locPage(l):VIEWS._placeholder(r); }
+    var html=head("Location Library","Himachal, mapped for shoots and clients. Each place is a scouting brief — light, weather, the businesses worth filming, and future clients.","Location Library");
+    html+='<div class="note note--warn">'+ic("i-warn")+'<span>Always confirm access and ask permission before filming inside any private business or on private land.</span></div>';
+    html+='<div class="cardgrid" style="margin-top:14px">'+(NS.locations||[]).map(function(l){return '<div class="tile" data-go="locations/'+l.id+'" style="--dc:var(--c4)"><div class="tn">'+ic("i-map")+' '+esc((l.region||"").split("·")[0].trim().toUpperCase())+'</div><div class="tt">'+esc(l.name)+'</div><div class="td">'+esc((l.blurb||"").slice(0,92))+'…</div><div class="go">Scout '+ic("i-arrow")+'</div></div>';}).join("")+'</div>';
+    return html;
+  };
+
+  /* ---- SOP LIBRARY ---- */
+  function sopById(id){ return (NS.sops||[]).find(function(s){return s.id===id;}); }
+  function sopPage(s){
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="sops">SOP Library</a>'+ic("i-chevron")+'<span>'+esc(s.title)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(s.title)+'</h1>'+(s.blurb?'<p class="psub">'+esc(s.blurb)+'</p>':'')+'</div></div>';
+    h+='<div class="card cat" style="--bc:'+(s.accent||'var(--primary)')+'"><div class="card-title"><span class="ico">'+ic("i-list")+'</span><div><h3>Procedure</h3></div></div><ol class="steps">'+(s.steps||[]).map(function(x){return '<li><div>'+md(x)+'</div></li>';}).join("")+'</ol></div>';
+    if(s.checklist&&s.checklist.length) h+=listCard("Checklist","i-check",s.checklist.map(function(c){return c.label;}),false);
+    if(s.cautions&&s.cautions.length) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-warn")+'</span><div><h3>Watch out</h3></div></div>'+s.cautions.map(function(c){return '<div class="note note--warn">'+ic("i-warn")+'<span>'+md(c)+'</span></div>';}).join("")+'</div>';
+    return h+renderBacklinks("sop:"+s.id);
+  }
+  VIEWS.sops = function(r){
+    if(r.param){ var s=sopById(r.param); return s?sopPage(s):VIEWS._placeholder(r); }
+    var html=head("SOP Library","The repeatable systems that hold the standard — and let a trained editor or shooter eventually deliver it without you.","SOP Library");
+    html+='<div class="cardgrid" style="margin-top:8px">'+(NS.sops||[]).map(function(s){return '<div class="tile" data-go="sops/'+s.id+'" style="--dc:'+(s.accent||'var(--c2)')+'"><div class="tn">'+ic(s.icon||"i-list")+' SOP</div><div class="tt">'+esc(s.title)+'</div><div class="td">'+esc((s.blurb||"").slice(0,92))+'…</div><div class="go">Open '+ic("i-arrow")+'</div></div>';}).join("")+'</div>';
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
