@@ -697,6 +697,28 @@
     return html;
   };
 
+  /* ---- HABIT TRACKER ---- */
+  function dkey(dt){ return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); }
+  function allHabits(){ return (NS.habitSeeds||[]).concat(store.get("customHabits",[])||[]); }
+  function habitLog(){ return store.get("habits",{}); }
+  function habitDays(){ var d=[],dt=new Date(); for(var i=6;i>=0;i--){ var x=new Date(); x.setDate(dt.getDate()-i); d.push({key:dkey(x),label:["S","M","T","W","T","F","S"][x.getDay()]}); } return d; }
+  function habitStreakOf(id){ var log=(habitLog()[id]||{}).log||{}, s=0, dt=new Date(); for(;;){ var k=dkey(dt); if(log[k]){ s++; dt.setDate(dt.getDate()-1); } else if(s===0 && k===todayKey()){ dt.setDate(dt.getDate()-1); } else break; } return s; }
+  VIEWS.habits = function(){
+    var habits=allHabits(), days=habitDays(), log=habitLog(), streak=computeStreak();
+    var todayDone=habits.filter(function(h){return ((log[h.id]||{}).log||{})[todayKey()];}).length;
+    var html=head("Habit Tracker","Small daily reps compound into a studio. Protect the streak — one rep beats a perfect plan.","Habit Tracker");
+    html+='<div class="stats" style="--n:2;margin-top:18px"><div class="stat"><div class="big">'+streak+'</div><div class="lbl">Day streak</div><div class="sub">consecutive days with a rep</div></div>'+
+      '<div class="stat" style="--cat:var(--c1)"><div class="big">'+todayDone+' <small style="font-size:1rem;color:var(--ink-faint)">/ '+habits.length+'</small></div><div class="lbl">Done today</div></div></div>';
+    html+='<div class="card" style="margin-top:18px"><div class="card-title"><span class="ico">'+ic("i-activity")+'</span><div><h3>This week</h3><div class="val">tap any day to toggle</div></div></div>';
+    html+=habits.map(function(h){ var hl=(log[h.id]||{}).log||{}; var custom=h.id.indexOf("c-")===0;
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)">'+
+        '<div style="flex:1;min-width:0"><div style="font-size:.92rem;color:var(--ink);font-weight:500">'+esc(h.label)+'</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:.62rem;color:var(--ink-faint);margin-top:2px">'+habitStreakOf(h.id)+'-day streak'+(custom?' · <span class="chiplink" data-habitdel="'+h.id+'" style="padding:0 6px">'+ic("i-trash")+'</span>':'')+'</div></div>'+
+        '<div style="display:flex;gap:5px">'+days.map(function(d){var on=!!hl[d.key]; return '<span data-habittoggle="'+h.id+'|'+d.key+'" title="'+d.key+'" style="width:26px;height:26px;border-radius:7px;display:grid;place-items:center;cursor:pointer;font-family:\'JetBrains Mono\',monospace;font-size:.6rem;background:'+(on?'var(--primary)':'#ECEFEA')+';color:'+(on?'#fff':'var(--ink-faint)')+'">'+d.label+'</span>';}).join("")+'</div></div>';
+    }).join("")+'</div>';
+    html+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-plus")+'</span><div><h3>Add a habit</h3></div></div><div class="row"><input class="input" id="habit-new" placeholder="e.g. Pitch one new lead" style="flex:1;min-width:180px"><span class="btn btn--primary" data-habitadd="1">'+ic("i-check")+' Add</span></div></div>';
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -728,6 +750,9 @@
     var pfd=e.target.closest("[data-pfdel]"); if(pfd){ store.set("portfolio",pfAll().filter(function(x){return x.id!==pfd.getAttribute("data-pfdel");})); go("portfolio"); return; }
     var akc=e.target.closest("[data-askcopy]"); if(akc){ var ro=ASK_ROLES.find(function(x){return x.id===akc.getAttribute("data-askcopy");}); if(ro){ var p=askPrompt(ro,fval("ask-q")); var done=function(){ akc.innerHTML='<svg class="ic"><use href="#i-check"/></svg> Copied — paste into Claude'; }; if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(p).then(done).catch(done); } else { done(); } } return; }
     var ako=e.target.closest("[data-askopen]"); if(ako){ var ro2=ASK_ROLES.find(function(x){return x.id===ako.getAttribute("data-askopen");}); if(ro2){ window.open("https://claude.ai/new?q="+encodeURIComponent(askShort(ro2,fval("ask-q"))),"_blank","noopener"); } return; }
+    var hbt=e.target.closest("[data-habittoggle]"); if(hbt){ var hp=hbt.getAttribute("data-habittoggle").split("|"); var hb=store.get("habits",{}); hb[hp[0]]=hb[hp[0]]||{log:{}}; hb[hp[0]].log=hb[hp[0]].log||{}; if(hb[hp[0]].log[hp[1]]) delete hb[hp[0]].log[hp[1]]; else hb[hp[0]].log[hp[1]]=true; store.set("habits",hb); render(); return; }
+    if(e.target.closest("[data-habitadd]")){ var hn=fval("habit-new"); if(hn){ var ch=store.get("customHabits",[])||[]; ch.push({id:"c-"+uid(),label:hn}); store.set("customHabits",ch); } render(); return; }
+    var hdl=e.target.closest("[data-habitdel]"); if(hdl){ store.set("customHabits",(store.get("customHabits",[])||[]).filter(function(x){return x.id!==hdl.getAttribute("data-habitdel");})); render(); return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
