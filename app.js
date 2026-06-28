@@ -119,6 +119,7 @@
     (NS.sops||[]).forEach(function(x){ out.push({title:x.title,sub:"SOP",kind:"sop",go:"sops/"+x.id,icon:"i-list"}); });
     (NS.cdDrills||[]).forEach(function(d){ out.push({title:d.title,sub:"Creative Director",kind:"drill",go:"creative-director/"+d.id,icon:"i-eye"}); });
     (store.get("crm",[])||[]).forEach(function(c){ out.push({title:c.name,sub:"Business CRM",kind:"client",go:"crm/"+c.id,icon:"i-users"}); });
+    (store.get("portfolio",[])||[]).forEach(function(p){ out.push({title:p.client||"Case study",sub:"Portfolio",kind:"case study",go:"portfolio/"+p.id,icon:"i-camera"}); });
     (store.get("brain",[])||[]).forEach(function(x){ out.push({title:x.title||"(untitled)",sub:"Creative Brain",kind:"journal",go:"brain",icon:"i-bulb"}); });
     return out;
   }
@@ -634,6 +635,68 @@
     return html;
   };
 
+  /* ---- AGENCY PORTFOLIO (case studies) ---- */
+  function pfAll(){ return store.get("portfolio",[])||[]; }
+  function pfById(id){ return pfAll().find(function(p){return p.id===id;}); }
+  function pfPage(p){
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="portfolio">Agency Portfolio</a>'+ic("i-chevron")+'<span>'+esc(p.client||"Case study")+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(p.client||"Case study")+'</h1><p class="psub">'+esc(p.businessType||"")+(p.location?' · '+esc(p.location):'')+'</p></div></div>';
+    h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-edit")+'</span><div><h3>Case study</h3></div></div>'+
+      '<div class="grid g2">'+field("Client","pf-client",p.client)+field("Business type","pf-type",p.businessType)+'</div>'+
+      '<div class="grid g2">'+field("Location","pf-location",p.location)+field("Revenue (₹)","pf-revenue",p.revenue)+'</div>'+
+      areaField("Problem","pf-problem",p.problem)+
+      areaField("Solution","pf-solution",p.solution)+
+      areaField("Strategy","pf-strategy",p.strategy)+
+      field("Reel / link","pf-reel",p.reel)+
+      areaField("Results","pf-results",p.results)+
+      areaField("Testimonial","pf-testimonial",p.testimonial)+
+      areaField("Lessons","pf-lessons",p.lessons)+
+      '<div class="row"><span class="btn btn--primary" data-pfsave="'+p.id+'">'+ic("i-check")+' Save</span><span class="btn" data-pfdel="'+p.id+'">'+ic("i-trash")+' Delete</span>'+(p.reel?'<a class="btn" href="'+esc(p.reel)+'" target="_blank" rel="noopener">'+ic("i-ext")+' Open reel</a>':'')+'</div></div>';
+    return h;
+  }
+  VIEWS.portfolio = function(r){
+    if(r.param){ var p=pfById(r.param); return p?pfPage(p):VIEWS._placeholder(r); }
+    var all=pfAll(); var rev=all.reduce(function(a,b){return a+(+b.revenue||0);},0);
+    var html=head("Agency Portfolio","Case studies, not a reel dump: problem → solution → strategy → results → testimonial. This is what wins the next, better client.","Agency Portfolio");
+    html+='<div class="stats" style="--n:3;margin-top:18px"><div class="stat"><div class="big">'+all.length+'</div><div class="lbl">Case studies</div></div>'+
+      '<div class="stat" style="--cat:var(--c2)"><div class="big" style="font-size:1.7rem">₹'+rev.toLocaleString("en-IN")+'</div><div class="lbl">Revenue represented</div></div>'+
+      '<div class="stat" style="--cat:var(--c1)"><div class="big">'+all.filter(function(p){return p.testimonial;}).length+'</div><div class="lbl">With testimonial</div></div></div>';
+    html+='<div class="card" style="margin-top:18px"><div class="card-title"><span class="ico">'+ic("i-plus")+'</span><div><h3>New case study</h3></div></div>'+
+      '<div class="grid g2">'+field("Client","pf-new-client","")+field("Business type","pf-new-type","")+'</div>'+
+      areaField("Problem","pf-new-problem","")+areaField("Solution / results","pf-new-solution","")+
+      '<div class="row"><span class="btn btn--primary" data-pfadd="1">'+ic("i-check")+' Add case study</span></div></div>';
+    if(all.length){ html+='<div class="cardgrid" style="margin-top:6px">'+all.slice().reverse().map(function(p){return '<div class="tile" data-go="portfolio/'+p.id+'" style="--dc:var(--c1)"><div class="tn">'+esc((p.businessType||"case").toUpperCase())+'</div><div class="tt">'+esc(p.client||"Case study")+'</div><div class="td">'+esc((p.results||p.solution||p.problem||"").slice(0,90))+'…</div><div class="go">Open '+ic("i-arrow")+'</div></div>';}).join("")+'</div>'; }
+    else html+='<div class="empty">'+ic("i-camera")+'<p style="margin-top:12px">No case studies yet. Every finished project should become one.</p></div>';
+    return html;
+  };
+
+  /* ---- ASK (North Star–grounded experts) ---- */
+  var ASK_ROLES=[
+    {id:"creative-director",role:"Creative Director",icon:"i-eye",persona:"You critique and direct hospitality visuals with restraint and taste, always pushing toward premium, story-first, light-led work."},
+    {id:"marketing-director",role:"Marketing Director",icon:"i-bag",persona:"You turn hospitality content into bookings — hooks, formats, captions and distribution tuned for Indian and Himachali audiences."},
+    {id:"sales-coach",role:"Sales Coach",icon:"i-cash",persona:"You coach me through discovery calls, pricing, objections and closing premium hospitality clients without discounting."},
+    {id:"colorist",role:"Colorist",icon:"i-palette",persona:"You guide DaVinci Resolve grades — balance, mood, protecting highlights, and building a repeatable signature look."},
+    {id:"cinematographer",role:"Cinematographer",icon:"i-camera",persona:"You advise on Blackmagic camera, exposure, lensing, lighting and shot design for cinematic hospitality footage."},
+    {id:"hospitality-consultant",role:"Hospitality Consultant",icon:"i-building",persona:"You read hotels, cafés and salons like a luxury brand consultant — guest psychology, positioning, and what makes a space feel premium."}
+  ];
+  function nsBlock(){ return (NS.northstar||[]).map(function(d){ return "## "+d.title+"\n"+d.body+((d.principles&&d.principles.length)?"\n- "+d.principles.join("\n- "):""); }).join("\n\n"); }
+  function askPrompt(role,q){ return "You are my "+role.role+" for North Stories — a premium hospitality visual studio I'm building in Himachal Pradesh, India. "+role.persona+"\n\nRead my North Star first and let it guide every answer:\n\n"+nsBlock()+"\n\nMy question / situation:\n"+(q||"(describe what you need help with)"); }
+  function askShort(role,q){ var m=(NS.northstar||[]).find(function(d){return d.id==="mission";}); return "You are my "+role.role+" for North Stories, a premium hospitality visual studio in Himachal Pradesh. "+role.persona+(m?(" My mission: "+m.body):"")+"\n\nMy question:\n"+(q||""); }
+  function askRolePage(role){
+    return '<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="ask">Ask</a>'+ic("i-chevron")+'<span>'+esc(role.role)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">Ask the '+esc(role.role)+'</h1><p class="psub">'+esc(role.persona)+'</p></div></div>'+
+      '<div class="card"><div class="card-title"><span class="ico">'+ic(role.icon)+'</span><div><h3>What do you need?</h3><div class="val">grounded in your North Star</div></div></div>'+
+      '<div class="field" style="margin-top:12px"><textarea class="input" id="ask-q" placeholder="Describe your situation or question…" style="min-height:110px"></textarea></div>'+
+      '<div class="row"><span class="btn btn--primary" data-askcopy="'+role.id+'">'+ic("i-edit")+' Copy grounded prompt</span><span class="btn" data-askopen="'+role.id+'">'+ic("i-ext")+' Open in Claude</span></div>'+
+      '<div class="note note--you">'+ic("i-bulb")+'<span><b>How it works.</b> "Copy" puts a full prompt — your North Star + this expert role + your question — on the clipboard to paste into Claude. "Open in Claude" launches a new chat with a shorter version prefilled.</span></div></div>';
+  }
+  VIEWS.ask = function(r){
+    if(r.param){ var role=ASK_ROLES.find(function(x){return x.id===r.param;}); return role?askRolePage(role):VIEWS._placeholder(r); }
+    var html=head("Ask","Launch a Claude expert that already knows who you're becoming. Each role reads your North Star first, then answers your situation.","Ask");
+    html+='<div class="cardgrid" style="margin-top:8px">'+ASK_ROLES.map(function(role){return '<div class="tile" data-go="ask/'+role.id+'" style="--dc:var(--primary)"><div class="tn">'+ic(role.icon)+' EXPERT</div><div class="tt">'+esc(role.role)+'</div><div class="td">'+esc(role.persona.slice(0,92))+'…</div><div class="go">Ask '+ic("i-arrow")+'</div></div>';}).join("")+'</div>';
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -660,6 +723,11 @@
     var icd=e.target.closest("[data-incdel]"); if(icd){ store.set("income",(store.get("income",[])||[]).filter(function(x){return x.id!==icd.getAttribute("data-incdel");})); render(); return; }
     if(e.target.closest("[data-brainadd]")){ var bb=fval("brain-body"); if(bb){ var br=brainAll(); br.push({id:uid(),date:todayKey(),type:fval("brain-type"),title:fval("brain-title"),body:bb,tags:fval("brain-tags").split(",").map(function(s){return s.trim();}).filter(Boolean)}); store.set("brain",br); } render(); return; }
     var brd=e.target.closest("[data-braindel]"); if(brd){ store.set("brain",brainAll().filter(function(x){return x.id!==brd.getAttribute("data-braindel");})); render(); return; }
+    if(e.target.closest("[data-pfadd]")){ var pc=fval("pf-new-client"); if(pc){ var pa=pfAll(); pa.push({id:uid(),date:todayKey(),client:pc,businessType:fval("pf-new-type"),problem:fval("pf-new-problem"),solution:fval("pf-new-solution"),strategy:"",reel:"",results:"",testimonial:"",lessons:"",revenue:"",location:""}); store.set("portfolio",pa); } render(); return; }
+    var pfs=e.target.closest("[data-pfsave]"); if(pfs){ var pa2=pfAll(); var p2=pa2.find(function(x){return x.id===pfs.getAttribute("data-pfsave");}); if(p2){ p2.client=fval("pf-client")||p2.client; p2.businessType=fval("pf-type"); p2.location=fval("pf-location"); p2.revenue=fval("pf-revenue"); p2.problem=fval("pf-problem"); p2.solution=fval("pf-solution"); p2.strategy=fval("pf-strategy"); p2.reel=fval("pf-reel"); p2.results=fval("pf-results"); p2.testimonial=fval("pf-testimonial"); p2.lessons=fval("pf-lessons"); store.set("portfolio",pa2); } render(); return; }
+    var pfd=e.target.closest("[data-pfdel]"); if(pfd){ store.set("portfolio",pfAll().filter(function(x){return x.id!==pfd.getAttribute("data-pfdel");})); go("portfolio"); return; }
+    var akc=e.target.closest("[data-askcopy]"); if(akc){ var ro=ASK_ROLES.find(function(x){return x.id===akc.getAttribute("data-askcopy");}); if(ro){ var p=askPrompt(ro,fval("ask-q")); var done=function(){ akc.innerHTML='<svg class="ic"><use href="#i-check"/></svg> Copied — paste into Claude'; }; if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(p).then(done).catch(done); } else { done(); } } return; }
+    var ako=e.target.closest("[data-askopen]"); if(ako){ var ro2=ASK_ROLES.find(function(x){return x.id===ako.getAttribute("data-askopen");}); if(ro2){ window.open("https://claude.ai/new?q="+encodeURIComponent(askShort(ro2,fval("ask-q"))),"_blank","noopener"); } return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
