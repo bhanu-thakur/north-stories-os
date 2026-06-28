@@ -1,11 +1,12 @@
 /* North Stories OS — service worker (v2 · NETWORK-FIRST)
    Network-first so new deploys appear immediately; cache is only an
    offline fallback. Navigations fall back to the cached app shell. */
-var CACHE = "nsos-v2.1";
+var CACHE = "nsos-v2.2";
 var SHELL = [
   "./", "./index.html", "./app.js", "./data.core.js", "./data.bibles.js",
   "./data.skills.js", "./data.curriculum.js", "./data.cd.js",
-  "./data.locations.js", "./data.sops.js", "./manifest.webmanifest"
+  "./data.locations.js", "./data.sops.js", "./data.brands.js", "./data.agency.js",
+  "./manifest.webmanifest"
 ];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));

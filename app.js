@@ -120,6 +120,7 @@
     (NS.cdDrills||[]).forEach(function(d){ out.push({title:d.title,sub:"Creative Director",kind:"drill",go:"creative-director/"+d.id,icon:"i-eye"}); });
     (store.get("crm",[])||[]).forEach(function(c){ out.push({title:c.name,sub:"Business CRM",kind:"client",go:"crm/"+c.id,icon:"i-users"}); });
     (store.get("portfolio",[])||[]).forEach(function(p){ out.push({title:p.client||"Case study",sub:"Portfolio",kind:"case study",go:"portfolio/"+p.id,icon:"i-camera"}); });
+    (NS.agency||[]).forEach(function(d){ out.push({title:d.title,sub:"Agency Brain",kind:"playbook",go:"agency/"+d.id,icon:"i-bag"}); });
     (store.get("brain",[])||[]).forEach(function(x){ out.push({title:x.title||"(untitled)",sub:"Creative Brain",kind:"journal",go:"brain",icon:"i-bulb"}); });
     return out;
   }
@@ -801,6 +802,46 @@
     return html;
   };
 
+  /* ---- BRAND LIBRARY ---- */
+  function brandById(id){ return (NS.brands||[]).find(function(b){return b.id===id;}); }
+  function brandPage(b){
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="brands">Brand Library</a>'+ic("i-chevron")+'<span>'+esc(b.name)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(b.name)+'</h1>'+(b.blurb?'<p class="psub">'+esc(b.blurb)+'</p>':'')+'</div>'+(b.sector?'<span class="pill pill--brand">'+esc(b.sector)+'</span>':'')+'</div>';
+    h+=scalarCard("The teardown","i-palette",[["Visual language",b.visualLanguage],["Colour",b.color],["Movement",b.movement],["Composition",b.composition],["Typography",b.typography]]);
+    if(b.businessLesson) h+=secCard("Business lesson","i-cash",'<p class="lead" style="color:var(--ink)">'+md(b.businessLesson)+'</p>');
+    if(b.doNotCopy) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-warn")+'</span><div><h3>What NOT to copy</h3></div></div><div class="note note--warn">'+ic("i-warn")+'<span>'+md(b.doNotCopy)+'</span></div></div>';
+    h+=listCard("Underlying principles","i-compass",b.principles,false);
+    return h+renderBacklinks("brand:"+b.id);
+  }
+  VIEWS.brands = function(r){
+    if(r.param){ var b=brandById(r.param); return b?brandPage(b):VIEWS._placeholder(r); }
+    var html=head("Brand Library","Teardowns of the brands worth studying. Extract the principle, notice what NOT to borrow for warm Himachal work — never copy.","Brand Library");
+    html+='<div class="cardgrid" style="margin-top:8px">'+(NS.brands||[]).map(function(b){return '<div class="tile" data-go="brands/'+b.id+'" style="--dc:var(--c4)"><div class="tn">'+ic("i-star")+' '+esc((b.sector||"").split("/")[0].trim().toUpperCase())+'</div><div class="tt">'+esc(b.name)+'</div><div class="td">'+esc((b.blurb||"").slice(0,92))+'…</div><div class="go">Study '+ic("i-arrow")+'</div></div>';}).join("")+'</div>';
+    return html;
+  };
+
+  /* ---- AGENCY BRAIN ---- */
+  function agencyById(id){ return (NS.agency||[]).find(function(d){return d.id===id;}); }
+  function agencyDocPage(d){
+    var sec=(NS.agencySections||[]).find(function(s){return s.id===d.section;})||{label:d.section,accent:'var(--primary)'};
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="agency">Agency Brain</a>'+ic("i-chevron")+'<span>'+esc(d.title)+'</span></div>'+
+      '<div class="phead"><div><div class="eyebrow">'+esc(sec.label)+'</div><h1 class="ptitle" style="margin-top:10px">'+esc(d.title)+'</h1></div></div>'+
+      '<div class="card cat" style="--bc:'+sec.accent+'"><div class="lead" style="color:var(--ink);font-size:.98rem;line-height:1.7">'+md(d.body)+'</div></div>';
+    (d.templates||[]).forEach(function(t,i){ var tid="tpl-"+d.id+"-"+i;
+      h+='<div class="card"><div class="card-top"><div class="card-title"><span class="ico">'+ic("i-doc")+'</span><div><h3>'+esc(t.name)+'</h3></div></div><span class="btn btn--sm btn--primary" data-copytpl="'+tid+'">'+ic("i-edit")+' Copy</span></div><pre class="codeblock" id="'+tid+'">'+esc(t.body)+'</pre></div>';
+    });
+    return h+renderBacklinks("agency:"+d.id);
+  }
+  VIEWS.agency = function(r){
+    if(r.param){ var d=agencyById(r.param); return d?agencyDocPage(d):VIEWS._placeholder(r); }
+    var html=head("Agency Brain","Pricing, sales, scripts and paperwork — the playbooks and copy-paste templates that turn talent into a business.","Agency Brain");
+    (NS.agencySections||[]).forEach(function(sec){
+      var items=(NS.agency||[]).filter(function(d){return d.section===sec.id;}); if(!items.length) return;
+      html+='<div class="sec-head" style="margin-top:26px"><p class="eyebrow">'+esc(sec.label)+'</p></div><div class="cardgrid">'+items.map(function(d){return '<div class="tile" data-go="agency/'+d.id+'" style="--dc:'+sec.accent+'"><div class="tn">'+ic(sec.icon)+' '+((d.templates&&d.templates.length)?d.templates.length+' TEMPLATES':'PLAYBOOK')+'</div><div class="tt">'+esc(d.title)+'</div><div class="td">'+esc(plain(d.body).slice(0,90))+'…</div><div class="go">Open '+ic("i-arrow")+'</div></div>';}).join("")+'</div>';
+    });
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -838,6 +879,7 @@
     var rvs=e.target.closest("[data-revsave]"); if(rvs){ var rb=fval("rev-body"); if(rb){ var rl=revAll(); rl.push({id:uid(),kind:rvs.getAttribute("data-revsave"),date:todayKey(),body:rb}); store.set("reviews",rl); } render(); return; }
     var rvd=e.target.closest("[data-revdel]"); if(rvd){ store.set("reviews",revAll().filter(function(x){return x.id!==rvd.getAttribute("data-revdel");})); render(); return; }
     var rho=e.target.closest("[data-rhopen]"); if(rho){ var tp=fval("rh-topic"); if(tp) window.open(researchURL(rho.getAttribute("data-rhopen"),tp),"_blank","noopener"); return; }
+    var ctp=e.target.closest("[data-copytpl]"); if(ctp){ var el=document.getElementById(ctp.getAttribute("data-copytpl")); if(el){ var txt=el.textContent||""; var ok=function(){ ctp.innerHTML='<svg class="ic"><use href="#i-check"/></svg> Copied'; }; if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(ok).catch(ok); } else ok(); } return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
