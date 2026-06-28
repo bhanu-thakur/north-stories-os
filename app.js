@@ -403,6 +403,7 @@
     case "instagram": return "https://www.instagram.com/explore/tags/"+encodeURIComponent(q.replace(/[^a-z0-9]/gi,""))+"/";
     case "youtube": return "https://www.youtube.com/results?search_query="+e;
     case "behance": return "https://www.behance.net/search/projects?search="+e;
+    case "reddit": return "https://www.reddit.com/search/?q="+e;
     default: return "https://www.google.com/search?q="+e; } }
   function secCard(title,icon,bodyHtml,accent){ return '<div class="card'+(accent?' cat':'')+'"'+(accent?(' style="--bc:'+accent+'"'):'')+'><div class="card-title"><span class="ico">'+ic(icon)+'</span><div><h3>'+esc(title)+'</h3></div></div>'+bodyHtml+'</div>'; }
   function skillChips(p){ if(!p.skills||!p.skills.length) return ""; return '<div class="card"><div class="card-title"><span class="ico">'+ic("i-activity")+'</span><div><h3>Skills it will advance</h3></div></div><div style="margin-top:10px">'+p.skills.map(function(s){var sk=skillById(s.skillId);return '<span class="chiplink" data-go="skills/'+s.skillId+'">'+ic("i-activity")+esc(sk?sk.name:s.skillId)+'</span>';}).join("")+'</div></div>'; }
@@ -719,6 +720,46 @@
     return html;
   };
 
+  /* ---- REVIEWS ---- */
+  var REVIEW_KINDS=[
+    {id:"cd",label:"Creative Director review",icon:"i-eye",accent:"var(--c4)",cadence:"after each project / weekly",prompts:["What's the single best frame I made, and why does it work?","Where did my taste visibly improve?","What looked amateur — and what caused it?","One reference or principle to study next."]},
+    {id:"weekly",label:"Weekly review",icon:"i-flag",accent:"var(--c1)",cadence:"every Sunday",prompts:["What did I actually ship this week?","Which skill moved forward, and how do I know?","Biggest business action taken (or missed)?","What got in the way — and the fix?","Next week's one focus."]},
+    {id:"monthly",label:"Monthly review",icon:"i-calendar",accent:"var(--c2)",cadence:"first of the month",prompts:["How did revenue and pipeline change?","Best work this month — is it portfolio-ready?","Progress on clients / retainers?","Stop / start / continue?","Next milestone and the plan to hit it."]}
+  ];
+  function revAll(){ return store.get("reviews",[])||[]; }
+  function reviewKind(id){ return REVIEW_KINDS.find(function(x){return x.id===id;}); }
+  function reviewPage(k){
+    var mine=revAll().filter(function(e){return e.kind===k.id;});
+    var h='<div class="crumb"><a data-go="today">Home</a>'+ic("i-chevron")+'<a data-go="reviews">Reviews</a>'+ic("i-chevron")+'<span>'+esc(k.label)+'</span></div>'+
+      '<div class="phead"><div><h1 class="ptitle">'+esc(k.label)+'</h1><p class="psub">'+esc(k.cadence)+'</p></div></div>'+
+      listCard("Reflect on","i-bulb",k.prompts,false)+
+      '<div class="card"><div class="card-title"><span class="ico">'+ic("i-edit")+'</span><div><h3>Write the review</h3></div></div><div class="field" style="margin-top:12px"><textarea class="input" id="rev-body" placeholder="Answer the prompts honestly…" style="min-height:160px"></textarea></div><div class="row"><span class="btn btn--primary" data-revsave="'+k.id+'">'+ic("i-check")+' Save review</span></div></div>';
+    if(mine.length) h+='<div class="card"><div class="card-title"><span class="ico">'+ic("i-book")+'</span><div><h3>Past '+esc(k.label.toLowerCase())+'s</h3><div class="val">'+mine.length+'</div></div></div>'+mine.slice().reverse().map(function(e){return '<div style="padding:12px 0;border-top:1px solid var(--line)"><div style="font-family:\'JetBrains Mono\',monospace;font-size:.64rem;color:var(--ink-faint);display:flex;justify-content:space-between"><span>'+esc(e.date)+'</span><span class="chiplink" data-revdel="'+e.id+'" style="padding:1px 7px">'+ic("i-trash")+'</span></div><div class="lead" style="color:var(--ink-soft);margin-top:6px">'+md(e.body)+'</div></div>';}).join("")+'</div>';
+    return h;
+  }
+  VIEWS.reviews = function(r){
+    if(r.param){ var k=reviewKind(r.param); return k?reviewPage(k):VIEWS._placeholder(r); }
+    var all=revAll();
+    var html=head("Reviews","Reflection is where the lessons stick and the skills get validated. Review the work, the week, the month — then adjust.","Reviews");
+    html+='<div class="cardgrid" style="margin-top:8px">'+REVIEW_KINDS.map(function(k){var n=all.filter(function(e){return e.kind===k.id;}).length; return '<div class="tile" data-go="reviews/'+k.id+'" style="--dc:'+k.accent+'"><div class="tn">'+ic(k.icon)+' '+(n?n+' LOGGED':'NEW')+'</div><div class="tt">'+esc(k.label)+'</div><div class="td">'+esc(k.cadence)+'</div><div class="go">Start '+ic("i-arrow")+'</div></div>';}).join("")+'</div>';
+    if(all.length){ html+='<div class="sec-head" style="margin-top:28px"><p class="eyebrow">Recent</p></div>'+all.slice().reverse().slice(0,6).map(function(e){var k=reviewKind(e.kind)||{label:e.kind,accent:'var(--primary)'}; return '<div class="card cat" style="--bc:'+k.accent+';padding:16px 20px"><div style="display:flex;justify-content:space-between"><span class="pill pill--brand">'+esc(k.label)+'</span><span style="font-family:\'JetBrains Mono\',monospace;font-size:.62rem;color:var(--ink-faint)">'+esc(e.date)+'</span></div><div class="lead" style="color:var(--ink-soft);margin-top:8px">'+md((e.body||"").slice(0,200))+'…</div></div>';}).join(""); }
+    return html;
+  };
+
+  /* ---- RESEARCH HUB ---- */
+  var RH_PLATFORMS=["Google Images","Pinterest","Behance","Instagram","YouTube","Reddit"];
+  var RH_PRESETS=["luxury hotel lobby cinematic","cosy cafe interior window light","boutique homestay room styling","food cinematography reel","luxury hospitality branding","spa wellness aesthetic","himachal mountain resort","restaurant table-top reel"];
+  function rhLinks(topic){ return RH_PLATFORMS.map(function(p){return '<a class="inspo" style="margin:0 6px 6px 0" href="'+esc(researchURL(p,topic))+'" target="_blank" rel="noopener">'+ic("i-ext")+esc(p)+'</a>';}).join(""); }
+  VIEWS.research = function(){
+    var html=head("Research Hub","Train your eye with exact searches — one click each. Never copy; observe, analyse, extract the principle.","Research Hub");
+    html+='<div class="card" style="margin-top:6px"><div class="card-title"><span class="ico">'+ic("i-search")+'</span><div><h3>Search anything</h3></div></div><div class="row" style="margin-top:10px"><input class="input" id="rh-topic" placeholder="e.g. boutique hotel breakfast reel" style="flex:1;min-width:200px"></div><div class="row" style="margin-top:12px">'+RH_PLATFORMS.map(function(p){return '<span class="btn btn--sm" data-rhopen="'+esc(p)+'">'+ic("i-ext")+' '+esc(p)+'</span>';}).join("")+'</div></div>';
+    html+='<div class="sec-head" style="margin-top:24px"><p class="eyebrow">Curated</p><h2 style="font-size:1.3rem">Eye-training searches</h2></div>';
+    html+=RH_PRESETS.map(function(t){return '<div class="card" style="padding:18px 20px"><div style="font-family:\'Fraunces\',serif;font-weight:600;font-size:1.05rem;margin-bottom:8px">'+esc(t)+'</div>'+rhLinks(t)+'</div>';}).join("");
+    var projWithR=(NS.curriculum||[]).filter(function(p){return p.research&&p.research.length;});
+    if(projWithR.length){ html+='<div class="sec-head" style="margin-top:24px"><p class="eyebrow">From your projects</p></div>'+projWithR.map(function(p){return '<div class="card" style="padding:18px 20px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:\'Fraunces\',serif;font-weight:600">'+esc(p.title)+'</span><span class="chiplink" data-go="curriculum/'+p.id+'">'+ic("i-arrow")+'Open</span></div><div style="margin-top:10px">'+p.research.map(function(rq){return '<a class="inspo" style="margin:0 6px 6px 0" href="'+esc(researchURL(rq.platform,rq.query))+'" target="_blank" rel="noopener">'+ic("i-ext")+esc(rq.platform)+': '+esc(rq.query)+'</a>';}).join("")+'</div></div>';}).join(""); }
+    return html;
+  };
+
   /* ===========================================================
      EVENTS + INIT
      =========================================================== */
@@ -753,6 +794,9 @@
     var hbt=e.target.closest("[data-habittoggle]"); if(hbt){ var hp=hbt.getAttribute("data-habittoggle").split("|"); var hb=store.get("habits",{}); hb[hp[0]]=hb[hp[0]]||{log:{}}; hb[hp[0]].log=hb[hp[0]].log||{}; if(hb[hp[0]].log[hp[1]]) delete hb[hp[0]].log[hp[1]]; else hb[hp[0]].log[hp[1]]=true; store.set("habits",hb); render(); return; }
     if(e.target.closest("[data-habitadd]")){ var hn=fval("habit-new"); if(hn){ var ch=store.get("customHabits",[])||[]; ch.push({id:"c-"+uid(),label:hn}); store.set("customHabits",ch); } render(); return; }
     var hdl=e.target.closest("[data-habitdel]"); if(hdl){ store.set("customHabits",(store.get("customHabits",[])||[]).filter(function(x){return x.id!==hdl.getAttribute("data-habitdel");})); render(); return; }
+    var rvs=e.target.closest("[data-revsave]"); if(rvs){ var rb=fval("rev-body"); if(rb){ var rl=revAll(); rl.push({id:uid(),kind:rvs.getAttribute("data-revsave"),date:todayKey(),body:rb}); store.set("reviews",rl); } render(); return; }
+    var rvd=e.target.closest("[data-revdel]"); if(rvd){ store.set("reviews",revAll().filter(function(x){return x.id!==rvd.getAttribute("data-revdel");})); render(); return; }
+    var rho=e.target.closest("[data-rhopen]"); if(rho){ var tp=fval("rh-topic"); if(tp) window.open(researchURL(rho.getAttribute("data-rhopen"),tp),"_blank","noopener"); return; }
     if(e.target.id==="palbg"){ palClose(); }
   }
   function onKey(e){
